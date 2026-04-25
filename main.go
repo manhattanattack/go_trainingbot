@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -8,6 +9,8 @@ import (
 
 	_ "modernc.org/sqlite"
 )
+
+var db *sql.DB
 
 type TrainingData struct {
 	Exercises []ExerciseData `json:"exercises"`
@@ -63,7 +66,36 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 
 // }
 
+func createTables() {
+	query := `CREATE TABLE IF NOT EXISTS trainings (
+		id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT, 
+		date TEXT NOT NULL
+	);
+	`
+	_, err := db.Exec(query)
+	if err != nil {
+		log.Fatal("Couldn't create tables: ", err)
+	}
+
+	fmt.Println("Создал таблицы")
+
+}
+
+func initDB() {
+	var err error
+	db, err := sql.Open("sqlite", "tracker.db")
+	if err != nil {
+		log.Fatal("Failed to open db: ", err)
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatal("Couldn't ping DB: ", err)
+	}
+
+	createTables()
+}
+
 func main() {
+	initDB()
 	http.Handle("/", http.FileServer(http.Dir("static")))
 	http.HandleFunc("/api/training", addTrainingHandler)
 
