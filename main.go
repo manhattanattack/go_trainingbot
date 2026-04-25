@@ -30,13 +30,18 @@ type SetData struct {
 	Note   string  `json:"note,omitempty"`
 }
 
+// TODO: implement telegram initData token validation
 func insertTrainingData(trainingData TrainingData) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	result, err := tx.Exec("INSERT INTO trainings (date) VALUES (?)", trainingData.Date)
+	_, err = tx.Exec("INSERT INTO users (user_id) VALUES (?)", 1)
+	if err != nil {
+		return err
+	}
+	result, err := tx.Exec("INSERT INTO trainings (user_id, date) VALUES (?, ?)", 1, trainingData.Date)
 	if err != nil {
 		return err
 	}
@@ -92,7 +97,10 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("Успешно распарсил: %+v\n", trainingData)
-
+	err = insertTrainingData(trainingData)
+	if err != nil {
+		log.Println(err)
+	}
 	err = encoder.Encode(data)
 	if err != nil {
 		fmt.Printf("Не смог записать в json %v\n", err)
@@ -111,7 +119,8 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 func createTables() {
 	query := `
 	CREATE TABLE IF NOT EXISTS users (
-		user_id INTEGER  PRIMARY KEY,
+		user_id INTEGER PRIMARY KEY,
+		name TEXT NOT NULL,
 		weight REAL,
 		height INTEGER 
 	);
@@ -142,6 +151,7 @@ func createTables() {
 		reps INTEGER NOT NULL,
 		weight REAL NOT NULL,
 		rpe INTEGER,
+		note TEXT,
 		FOREIGN KEY (exercise_id) REFERENCES exercises(exercise_Id)
 	);
 	
