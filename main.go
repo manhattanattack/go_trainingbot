@@ -18,14 +18,56 @@ type TrainingData struct {
 }
 
 type ExerciseData struct {
-	ExcerciseId uint16    `json:"exerciseId"`
-	Sets        []SetData `json:"sets"`
+	ExcerciseId  uint8     `json:"exerciseId"`
+	BaseExercise uint8     `json:"baseExercise"`
+	Sets         []SetData `json:"sets"`
 }
 
 type SetData struct {
 	Weight float32 `json:"weight"`
 	Reps   uint8   `json:"reps"`
+	Rpe    uint8   `json:"rpe"`
 	Note   string  `json:"note,omitempty"`
+}
+
+func insertTrainingData(trainingData TrainingData) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	result, err := tx.Exec("INSERT INTO trainings (date) VALUES (?)", trainingData.Date)
+	if err != nil {
+		return err
+	}
+	trainingId, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	for _, exercise := range trainingData.Exercises {
+		result, err = tx.Exec("INSERT INTO exercises (base_exercise, training_id) VALUES (?, ?)", exercise.BaseExercise, trainingId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		exerciseId, err := result.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		for _, set := range exercise.Sets {
+			_, err = tx.Exec("INSERT INTO sets (exercise_id, reps, weight, rpe) VALUES (?, ?, ?, ?)", exerciseId, set.Reps, set.Weight, set.Rpe)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
