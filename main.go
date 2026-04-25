@@ -67,10 +67,42 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 // }
 
 func createTables() {
-	query := `CREATE TABLE IF NOT EXISTS trainings (
-		id INT UNSIGNED PRIMARY KEY, 
-		date TEXT NOT NULL
+	query := `
+	CREATE TABLE IF NOT EXISTS users (
+		user_id INTEGER  PRIMARY KEY,
+		weight REAL,
+		height INTEGER 
 	);
+	
+	CREATE TABLE IF NOT EXISTS trainings (
+		training_id INTEGER PRIMARY KEY,
+		user_id INTEGER NOT NULL,
+		date TEXT NOT NULL,
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS base_exercises (
+		base_id INTEGER  PRIMARY KEY ,
+		description TEXT
+	);
+
+	CREATE TABLE IF NOT EXISTS exercises (
+		exercise_id INTEGER PRIMARY KEY,
+		base_exercise INTEGER NOT NULL,
+		training_id INTEGER NOT NULL,
+		FOREIGN KEY (base_exercise) REFERENCES base_exercises(base_id),
+		FOREIGN KEY (training_id) REFERENCES trainings(training_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS sets (
+		set_id INTEGER  PRIMARY KEY,
+		exercise_id INTEGER NOT NULL,
+		reps INTEGER NOT NULL,
+		weight REAL NOT NULL,
+		rpe INTEGER,
+		FOREIGN KEY (exercise_id) REFERENCES exercises(exercise_Id)
+	);
+	
 	`
 	_, err := db.Exec(query)
 	if err != nil {
