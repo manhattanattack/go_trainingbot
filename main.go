@@ -68,7 +68,7 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 
 func createTables() {
 	query := `CREATE TABLE IF NOT EXISTS trainings (
-		id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT, 
+		id INT UNSIGNED PRIMARY KEY, 
 		date TEXT NOT NULL
 	);
 	`
@@ -83,7 +83,7 @@ func createTables() {
 
 func initDB() {
 	var err error
-	db, err := sql.Open("sqlite", "tracker.db")
+	db, err = sql.Open("sqlite", "tracker.db")
 	if err != nil {
 		log.Fatal("Failed to open db: ", err)
 	}
