@@ -67,7 +67,7 @@
                     // Можно даже красиво заставить телегу вибрировать (Haptic Feedback)
                     tg.HapticFeedback.notificationOccurred('success');
                 } else {
-                    logEl.innerText = `❌ Ошибка бэкенда: ${response.status}`;
+                    logEl.innerText = `❌ Ошибка бэкенда: ${await response.text()}`;
                 }
             } catch (error) {
                 logEl.innerText = `❌ Сетевая ошибка: ${error.message}`;
