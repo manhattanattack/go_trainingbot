@@ -1,16 +1,28 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 
+	initdata "github.com/telegram-mini-apps/init-data-golang"
 	_ "modernc.org/sqlite"
 )
 
 var db *sql.DB
+
+// go требует чтоб ключ контекста был структурой
+type contextKey string
+
+// просто название ключа используемого в контексте
+const userIDKey contextKey = "userID"
 
 type TrainingData struct {
 	Exercises []ExerciseData `json:"exercises"`
@@ -30,18 +42,36 @@ type SetData struct {
 	Note   string  `json:"note,omitempty"`
 }
 
-// TODO: implement telegram initData token validation
-func insertTrainingData(trainingData TrainingData) error {
+func validateAndGetUserId(rawInitData string) (int64, error) {
+	token := os.Getenv("TG_BOT_TOKEN")
+	if token == "" {
+		return 0, errors.New("не нашел токен бота")
+	}
+	expIn := 12 * time.Hour
+
+	err := initdata.Validate(rawInitData, token, expIn)
+	if err != nil {
+		return 0, err
+	}
+	parsedData, err := initdata.Parse(rawInitData)
+	if err != nil {
+		return 0, err
+	}
+	return parsedData.User.ID, nil
+
+}
+
+func insertTrainingData(ctx context.Context, trainingData TrainingData) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.Exec("INSERT INTO users (user_id) VALUES (?)", 1)
+	_, err = tx.ExecContext(ctx, "INSERT INTO users (user_id) VALUES (?)", 1)
 	if err != nil {
 		return err
 	}
-	result, err := tx.Exec("INSERT INTO trainings (user_id, date) VALUES (?, ?)", 1, trainingData.Date)
+	result, err := tx.ExecContext(ctx, "INSERT INTO trainings (user_id, date) VALUES (?, ?)", 1, trainingData.Date)
 	if err != nil {
 		return err
 	}
@@ -50,7 +80,7 @@ func insertTrainingData(trainingData TrainingData) error {
 		return err
 	}
 	for _, exercise := range trainingData.Exercises {
-		result, err = tx.Exec("INSERT INTO exercises (base_exercise, training_id) VALUES (?, ?)", exercise.BaseExercise, trainingId)
+		result, err = tx.ExecContext(ctx, "INSERT INTO exercises (base_exercise, training_id) VALUES (?, ?)", exercise.BaseExercise, trainingId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -61,7 +91,7 @@ func insertTrainingData(trainingData TrainingData) error {
 			return err
 		}
 		for _, set := range exercise.Sets {
-			_, err = tx.Exec("INSERT INTO sets (exercise_id, reps, weight, rpe) VALUES (?, ?, ?, ?)", exerciseId, set.Reps, set.Weight, set.Rpe)
+			_, err = tx.ExecContext(ctx, "INSERT INTO sets (exercise_id, reps, weight, rpe) VALUES (?, ?, ?, ?)", exerciseId, set.Reps, set.Weight, set.Rpe)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -73,6 +103,40 @@ func insertTrainingData(trainingData TrainingData) error {
 		return err
 	}
 	return nil
+}
+
+// мидлвейр выполняет передаваемую функцию next, но с модифицированным запросом
+// (добавляет к нему контекст с userId пользователя, и хендлер уже знает его и уверен что пользователь залогинен)
+func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	// мидлвейр передается в HandlerFunc. в HandlerFunc выполняется middleware, в который аргументом передается моя функция-хендлер
+	// миддлвейр в свою очередь сразу же возвращает анонимную функцию, внутри которой проходит валидация и
+	// вызывается мой хендлер с модифицированным запросом, которую позже вызовет HandlerFunc когда придет запрос на роут
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		authParts := strings.Split(authHeader, " ")
+		if len(authParts) != 2 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		authType := authParts[0]
+		authData := authParts[1]
+		if authType != "tma" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		userId, err := validateAndGetUserId(authData)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		ctx := context.WithValue(r.Context(), userIDKey, userId)
+		next(w, r.WithContext(ctx))
+
+	}
 }
 
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +161,7 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("Успешно распарсил: %+v\n", trainingData)
-	err = insertTrainingData(trainingData)
+	err = insertTrainingData(r.Context(), trainingData)
 	if err != nil {
 		log.Println(err)
 	}
