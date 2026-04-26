@@ -30,7 +30,7 @@ type TrainingData struct {
 }
 
 type ExerciseData struct {
-	ExcerciseId  uint8     `json:"exerciseId"`
+	// ExcerciseId  uint8     `json:"exerciseId"`
 	BaseExercise uint8     `json:"baseExercise"`
 	Sets         []SetData `json:"sets"`
 }
@@ -43,6 +43,7 @@ type SetData struct {
 }
 
 func validateAndGetUserId(rawInitData string) (int64, error) {
+	fmt.Println(rawInitData)
 	token := os.Getenv("TG_BOT_TOKEN")
 	if token == "" {
 		return 0, errors.New("не нашел токен бота")
@@ -67,10 +68,10 @@ func insertTrainingData(ctx context.Context, trainingData TrainingData) error {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, "INSERT INTO users (user_id) VALUES (?)", 1)
-	if err != nil {
-		return err
-	}
+	// _, err = tx.ExecContext(ctx, "INSERT INTO users (user_id) VALUES (?)", 1)
+	// if err != nil {
+	// 	return err
+	// }
 	result, err := tx.ExecContext(ctx, "INSERT INTO trainings (user_id, date) VALUES (?, ?)", 1, trainingData.Date)
 	if err != nil {
 		return err
@@ -91,7 +92,7 @@ func insertTrainingData(ctx context.Context, trainingData TrainingData) error {
 			return err
 		}
 		for _, set := range exercise.Sets {
-			_, err = tx.ExecContext(ctx, "INSERT INTO sets (exercise_id, reps, weight, rpe) VALUES (?, ?, ?, ?)", exerciseId, set.Reps, set.Weight, set.Rpe)
+			_, err = tx.ExecContext(ctx, "INSERT INTO sets (exercise_id, reps, weight, rpe, note) VALUES (?, ?, ?, ?, ?)", exerciseId, set.Reps, set.Weight, set.Rpe, set.Note)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -112,25 +113,50 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	// миддлвейр в свою очередь сразу же возвращает анонимную функцию, внутри которой проходит валидация и
 	// вызывается мой хендлер с модифицированным запросом, которую позже вызовет HandlerFunc когда придет запрос на роут
 	return func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]any{
+			"error": "",
+		}
+		encoder := json.NewEncoder(w)
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			w.WriteHeader(http.StatusUnauthorized)
+			data["error"] = "Authorization header is empty"
+			err := encoder.Encode(data)
+			if err != nil {
+				fmt.Printf("Не смог записать в json %v\n", err)
+			}
 			return
 		}
 		authParts := strings.Split(authHeader, " ")
 		if len(authParts) != 2 {
 			w.WriteHeader(http.StatusUnauthorized)
+			data["error"] = "Authorization header is invalid"
+			err := encoder.Encode(data)
+			if err != nil {
+				fmt.Printf("Не смог записать в json %v\n", err)
+			}
 			return
 		}
 		authType := authParts[0]
 		authData := authParts[1]
 		if authType != "tma" {
 			w.WriteHeader(http.StatusUnauthorized)
+			data["error"] = "Authorization header is invalid"
+			err := encoder.Encode(data)
+			if err != nil {
+				fmt.Printf("Не смог записать в json %v\n", err)
+			}
 			return
 		}
 		userId, err := validateAndGetUserId(authData)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
+			data["error"] = err
+			err := encoder.Encode(data)
+			if err != nil {
+				fmt.Printf("Не смог записать в json %v\n", err)
+			}
 			return
 		}
 		ctx := context.WithValue(r.Context(), userIDKey, userId)
@@ -142,6 +168,7 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Получил запрос")
 	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	data := map[string]string{
@@ -165,11 +192,11 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+	w.WriteHeader(http.StatusCreated)
 	err = encoder.Encode(data)
 	if err != nil {
 		fmt.Printf("Не смог записать в json %v\n", err)
 	}
-	w.WriteHeader(http.StatusCreated)
 }
 
 // func meHandler(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +249,7 @@ func createTables() {
 	`
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Fatal("Couldn't create tables: ", err)
+		log.Fatal("Не смог создать таблицы: ", err)
 	}
 
 	fmt.Println("Создал таблицы")
@@ -233,10 +260,10 @@ func initDB() {
 	var err error
 	db, err = sql.Open("sqlite", "tracker.db")
 	if err != nil {
-		log.Fatal("Failed to open db: ", err)
+		log.Fatal("Не смог открыть бд: ", err)
 	}
 	if err = db.Ping(); err != nil {
-		log.Fatal("Couldn't ping DB: ", err)
+		log.Fatal("Не смог пингануть бд: ", err)
 	}
 
 	createTables()
@@ -245,7 +272,7 @@ func initDB() {
 func main() {
 	initDB()
 	http.Handle("/", http.FileServer(http.Dir("static")))
-	http.HandleFunc("/api/training", addTrainingHandler)
+	http.HandleFunc("/api/training", authMiddleware(addTrainingHandler))
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {

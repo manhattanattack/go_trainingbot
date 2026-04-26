@@ -1,9 +1,78 @@
-<html>
-    <head>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трекер MVP</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <h2>Тест коннекта с БД</h2>
+    <button id="sendBtn" style="padding: 15px; font-size: 16px;">Сохранить тренировку</button>
+    <p id="log"></p>
 
-    </head> 
+    <script>
+        // 2. Инициализируем объект Телеги
+        const tg = window.Telegram.WebApp;
+        
+        // Сообщаем клиенту телеграма, что аппка загрузилась и готова
+        tg.ready(); 
 
-    <body>
-        <h1>Жопа</h1>
-    </body>
+        document.getElementById('sendBtn').addEventListener('click', async () => {
+            const logEl = document.getElementById('log');
+            
+            // 3. ДОСТАЕМ ТУ САМУЮ СТРОКУ!
+            const initData = tg.initData;
+
+            // Ловушка для десктопа: если ты просто дважды кликнешь на index.html 
+            // в браузере, initData будет пустой, потому что браузер - это не Телега.
+            if (!initData) {
+                logEl.innerText = "❌ Ошибка: Открой меня внутри Telegram!";
+                return;
+            }
+
+            logEl.innerText = "Формируем данные...";
+
+            // 4. Собираем тестовый JSON (заглушка под твою структуру)
+            // Важно: exercise_id должен быть из тех, что реально есть в базе!
+            const dummyTraining = {
+                date: new Date().toISOString(),
+                exercises: [
+                    {
+                        BaseExercise: 1, // Убедись, что в base_exercises есть упражнение с ID 1
+                        sets: [
+                            { reps: 10, weight: 60.5, rpe: 8, note: "Полет нормальный" }
+                        ]
+                    }
+                ]
+            };
+
+            try {
+                logEl.innerText = "Отправляем на бэк...";
+                
+                // 5. Кидаем запрос на твой роут с правильным заголовком
+                const response = await fetch('/api/training', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // ВОТ ОНО! То самое слово tma пробел и сырая строка
+                        'Authorization': `tma ${initData}` 
+                    },
+                    body: JSON.stringify(dummyTraining)
+                });
+
+                if (response.ok) {
+                    logEl.innerText = "✅ Тренировка успешно записана в БД!";
+                    // Можно даже красиво заставить телегу вибрировать (Haptic Feedback)
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    logEl.innerText = `❌ Ошибка бэкенда: ${response.status}`;
+                }
+            } catch (error) {
+                logEl.innerText = `❌ Сетевая ошибка: ${error.message}`;
+            }
+        });
+    </script>
+</body>
 </html>
