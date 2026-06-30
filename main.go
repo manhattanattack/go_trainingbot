@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	initdata "github.com/telegram-mini-apps/init-data-golang"
 	_ "modernc.org/sqlite"
 )
@@ -64,6 +65,7 @@ func validateAndGetUserId(rawInitData string) (int64, error) {
 
 }
 
+// посмотреть мб добавить insert or ignore
 func insertTrainingData(ctx context.Context, trainingData TrainingData) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -153,20 +155,20 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: валидация json: чтобы нельзя было отправить 999 повторений и тд. можно использовать http.MaxBytesReader чтбоы не читать больше определенного объема
+// TODO: валидация json: чтобы нельзя было отправить 999 повторений и тд.
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Получил запрос")
-
 	responseData := map[string]string{
 		"status": "ok",
 	}
 	trainingData := TrainingData{}
 
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)) // читает не больше мегабайта хз работает или нет
 	encoder := json.NewEncoder(w)
 
 	err := decoder.Decode(&trainingData)
 	if err != nil {
+		// todo: добавить в ответ точную ошибку (в любом случае понадобится на фронте), в том числе maxbyteserror
 		fmt.Printf("Не смог прочитать из json %v\n", err)
 		responseData["status"] = "failed"
 		sendResponse(w, http.StatusBadRequest, responseData)
@@ -186,12 +188,13 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(userIDKey)
-	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId)
+	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId) // если нет юзера добавляю его
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	rows, err := db.Query(`
+	// собираю всю инфу по юзеру, лефт джоины относительно таблицы транировок, потому что упражнений и сетов может не быть
+	rows, err := db.Query(` 
 	SELECT 
 		t.training_id AS t_id, t.date,
 		e.exercise_id AS e_id, e.base_exercise,
@@ -208,9 +211,9 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	trainingsMap := make(map[any]*TrainingData)
-	exercisesMap := make(map[any]*ExerciseData)
-	var finalResponse []*TrainingData
+	trainingsMap := make(map[any]*TrainingData) // мап тренировки
+	exercisesMap := make(map[any]*ExerciseData) // мап упражнений одной тренировки
+	var finalResponse []*TrainingData           //
 	for rows.Next() {
 		var training *TrainingData
 		var exercise *ExerciseData
@@ -227,25 +230,25 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		_, exists := trainingsMap[trainingId]
-		if !exists {
+		if !exists { // создаю тренировку с пустым слайсом если ее нет
 			training = &TrainingData{
 				TrainingId: trainingId,
 				Date:       date,
 				Exercises:  make([]ExerciseData, 0),
 			}
-			trainingsMap[trainingId] = training
-			finalResponse = append(finalResponse, training)
+			trainingsMap[trainingId] = training             // добавляю в словарь тренировок под ключом с айди тренировки
+			finalResponse = append(finalResponse, training) // добавляю в финальный
 		}
 		if exerciseId != nil {
 			_, exists := exercisesMap[exerciseId]
-			if !exists {
+			if !exists { // если такого нет в словаре создаю упражнение с пустым слайсом сетов
 				exercise = &ExerciseData{
 					ExerciseId:   *exerciseId,
 					BaseExercise: *baseExercise,
 					Sets:         make([]SetData, 0),
 				}
-				exercisesMap[exerciseId] = exercise
-				training.Exercises = append(training.Exercises, *exercise)
+				exercisesMap[exerciseId] = exercise                        // добавляю новое упражнение в словатрь под ключом с айди упражнения
+				training.Exercises = append(training.Exercises, *exercise) // добавляю в тренировку упражнение
 			}
 		}
 		if setId != nil {
@@ -329,6 +332,7 @@ func initDB() {
 }
 
 func main() {
+	godotenv.Load()
 	initDB()
 	http.Handle("/", http.FileServer(http.Dir("static")))
 	http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
