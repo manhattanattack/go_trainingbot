@@ -46,7 +46,6 @@ type SetData struct {
 }
 
 func validateAndGetUserId(rawInitData string) (int64, error) {
-	fmt.Println(rawInitData)
 	token := os.Getenv("TG_BOT_TOKEN")
 	if token == "" {
 		return 0, errors.New("не нашел токен бота")
@@ -107,7 +106,7 @@ func insertTrainingData(ctx context.Context, trainingData TrainingData) error {
 	return nil
 }
 
-func sendResponse(w http.ResponseWriter, statusCode int, data map[string]string) {
+func sendResponse(w http.ResponseWriter, statusCode int, data map[string]any) {
 	encoder := json.NewEncoder(w)
 	w.WriteHeader(int(statusCode))
 	err := encoder.Encode(data)
@@ -123,7 +122,7 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	// миддлвейр в свою очередь сразу же возвращает анонимную функцию, внутри которой проходит валидация и
 	// вызывается мой хендлер с модифицированным запросом, которую позже вызовет HandlerFunc когда придет запрос на роут
 	return func(w http.ResponseWriter, r *http.Request) {
-		responseData := map[string]string{
+		responseData := map[string]any{
 			"error": "Invalid authorization token",
 		}
 
@@ -158,7 +157,7 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // TODO: валидация json: чтобы нельзя было отправить 999 повторений и тд.
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Получил запрос")
-	responseData := map[string]string{
+	responseData := map[string]any{
 		"status": "ok",
 	}
 	trainingData := TrainingData{}
@@ -169,8 +168,8 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&trainingData)
 	if err != nil {
 		// todo: добавить в ответ точную ошибку (в любом случае понадобится на фронте), в том числе maxbyteserror
-		fmt.Printf("Не смог прочитать из json %v\n", err)
-		responseData["status"] = "failed"
+		log.Println(err)
+		responseData["status"] = "failed to decode"
 		sendResponse(w, http.StatusBadRequest, responseData)
 		return
 	}
@@ -178,6 +177,9 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	err = insertTrainingData(r.Context(), trainingData)
 	if err != nil {
 		log.Println(err)
+		responseData["status"] = "failed to insert training data"
+		sendResponse(w, http.StatusBadRequest, responseData)
+		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	err = encoder.Encode(responseData)
@@ -261,13 +263,34 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			exercise.Sets = append(exercise.Sets, newSet)
 		}
-		json.NewEncoder(w).Encode(finalResponse)
 	}
+	json.NewEncoder(w).Encode(finalResponse)
 }
 
-// func profileHandler(w http.ResponseWriter, r *http.Request) {
-
-// }
+func profileHandler(w http.ResponseWriter, r *http.Request) {
+	responseData := map[string]any{
+		"name":   "",
+		"weight": 0,
+		"height": 0,
+	}
+	userId := r.Context().Value(userIDKey)
+	encoder := json.NewEncoder(w)
+	row := db.QueryRow("SELECT name, weight, height FROM users WHERE user_id = ?", userId)
+	var name *string // надо почитать поч именно указатели забыл уже и почему тут не сработают просто переменные
+	var weight *float32
+	var height *int
+	if err := row.Scan(&name, &weight, &height); err != nil {
+		sendResponse(w, http.StatusForbidden, make(map[string]any)) // хз как динамически мапы создавать
+		if err != sql.ErrNoRows {
+			log.Println(err)
+			return
+		}
+	}
+	responseData["name"] = name
+	responseData["weight"] = weight
+	responseData["height"] = height
+	encoder.Encode(responseData)
+}
 
 func createTables() {
 	query := `
