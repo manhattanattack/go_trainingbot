@@ -189,7 +189,8 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(userIDKey)
+	userId := 1
+	// userId := r.Context().Value(userIDKey)
 	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId) // если нет юзера добавляю его
 	if err != nil {
 		log.Println(err)
@@ -358,8 +359,11 @@ func main() {
 	godotenv.Load()
 	initDB()
 	http.Handle("/", http.FileServer(http.Dir("static")))
-	http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
-	http.HandleFunc("GET /me", authMiddleware(meHandler))
+	http.HandleFunc("POST /api/training", addTrainingHandler)
+	http.HandleFunc("GET /me", meHandler)
+
+	// http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
+	// http.HandleFunc("GET /me", authMiddleware(meHandler))
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
