@@ -1,78 +1,134 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Трекер MVP</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Training Tracker</title>
+  <meta name="description" content="Трекер тренировок — Telegram Mini App">
+
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2>Тест коннекта с БД</h2>
-    <button id="sendBtn" style="padding: 15px; font-size: 16px;">Сохранить тренировку</button>
-    <p id="log"></p>
 
-    <script>
-        // 2. Инициализируем объект Телеги
-        const tg = window.Telegram.WebApp;
-        
-        // Сообщаем клиенту телеграма, что аппка загрузилась и готова
-        tg.ready(); 
+<div id="app">
 
-        document.getElementById('sendBtn').addEventListener('click', async () => {
-            const logEl = document.getElementById('log');
-            
-            // 3. ДОСТАЕМ ТУ САМУЮ СТРОКУ!
-            const initData = tg.initData;
+  <!-- ═══════════════════════════════════════
+       PAGE: Тренировка
+       ═══════════════════════════════════════ -->
+  <div id="page-training" class="page active">
 
-            // Ловушка для десктопа: если ты просто дважды кликнешь на index.html 
-            // в браузере, initData будет пустой, потому что браузер - это не Телега.
-            if (!initData) {
-                logEl.innerText = "❌ Ошибка: Открой меня внутри Telegram!";
-                return;
-            }
+    <div class="page-header">
+      <h1>Тренировка</h1>
+      <p class="subtitle">Запиши свой прогресс</p>
+    </div>
 
-            logEl.innerText = "Формируем данные...";
+    <!-- Дата -->
+    <div class="card date-card">
+      <div class="date-icon">📅</div>
+      <div class="date-info">
+        <div class="date-value" id="date-display"></div>
+        <div class="date-label">Дата тренировки</div>
+      </div>
+      <input type="date" id="date-input">
+    </div>
 
-            // 4. Собираем тестовый JSON (заглушка под твою структуру)
-            // Важно: exercise_id должен быть из тех, что реально есть в базе!
-            const dummyTraining = {
-                date: new Date().toISOString(),
-                exercises: [
-                    {
-                        BaseExercise: 1, // Убедись, что в base_exercises есть упражнение с ID 1
-                        sets: [
-                            { reps: 10, weight: 60.5, rpe: 8, note: "Полет нормальный" }
-                        ]
-                    }
-                ]
-            };
+    <!-- Упражнения -->
+    <div id="exercises-container"></div>
 
-            try {
-                logEl.innerText = "Отправляем на бэк...";
-                
-                // 5. Кидаем запрос на твой роут с правильным заголовком
-                const response = await fetch('/api/training', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        // ВОТ ОНО! То самое слово tma пробел и сырая строка
-                        'Authorization': `tma ${initData}` 
-                    },
-                    body: JSON.stringify(dummyTraining)
-                });
+    <!-- Добавить упражнение -->
+    <button class="btn btn-secondary" id="btn-add-exercise">
+      <span>＋</span> Добавить упражнение
+    </button>
 
-                if (response.ok) {
-                    logEl.innerText = "✅ Тренировка успешно записана в БД!";
-                    // Можно даже красиво заставить телегу вибрировать (Haptic Feedback)
-                    tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    logEl.innerText = `❌ Ошибка бэкенда: ${await response.text()}`;
-                }
-            } catch (error) {
-                logEl.innerText = `❌ Сетевая ошибка: ${error.message}`;
-            }
-        });
-    </script>
+    <!-- Сохранить -->
+    <div class="save-section">
+      <button class="btn btn-primary" id="btn-save">
+        💾  Сохранить тренировку
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: Профиль
+       ═══════════════════════════════════════ -->
+  <div id="page-profile" class="page">
+
+    <div class="page-header">
+      <h1>Профиль</h1>
+    </div>
+
+    <div class="profile-header">
+      <div class="profile-avatar">🏆</div>
+      <div class="profile-name">Атлет</div>
+      <div class="profile-sub">Ваш трекер тренировок</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="card stat-card">
+        <div class="stat-value" id="stat-trainings">—</div>
+        <div class="stat-label">Тренировок</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value" id="stat-exercises">—</div>
+        <div class="stat-label">Упражнений</div>
+      </div>
+    </div>
+
+    <div class="section-title">История тренировок</div>
+    <div id="history-container">
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <p>Пока нет тренировок.<br>Время начинать!</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       BOTTOM NAVIGATION
+       ═══════════════════════════════════════ -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="training">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6.5 6.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/>
+        <path d="M21.5 6.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/>
+        <path d="M2 10h20"/>
+        <path d="M4.5 10v4"/>
+        <path d="M19.5 10v4"/>
+        <path d="M2 10l2.5-1.5"/>
+        <path d="M22 10l-2.5-1.5"/>
+        <rect x="7" y="8" width="10" height="4" rx="1"/>
+      </svg>
+      <span>Тренировка</span>
+    </button>
+    <button class="nav-btn" data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+      </svg>
+      <span>Профиль</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- ═══════════════════════════════════════
+     MODAL: Выбор упражнения (bottom sheet)
+     ═══════════════════════════════════════ -->
+<div id="exercise-modal" class="modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="modal-title">Выберите упражнение</div>
+    <input type="text" class="search-input" placeholder="Поиск упражнения..." autocomplete="off">
+    <div id="exercise-list"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
