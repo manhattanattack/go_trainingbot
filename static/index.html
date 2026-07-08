@@ -1,134 +1,18 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Training Tracker</title>
-  <meta name="description" content="Трекер тренировок — Telegram Mini App">
-
-  <!-- Telegram WebApp SDK -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <link rel="stylesheet" href="style.css">
+  <script type="module" crossorigin src="/assets/index-C1L3taKg.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BU4-x1Jo.css">
 </head>
 <body>
-
-<div id="app">
-
-  <!-- ═══════════════════════════════════════
-       PAGE: Тренировка
-       ═══════════════════════════════════════ -->
-  <div id="page-training" class="page active">
-
-    <div class="page-header">
-      <h1>Тренировка</h1>
-      <p class="subtitle">Запиши свой прогресс</p>
-    </div>
-
-    <!-- Дата -->
-    <div class="card date-card">
-      <div class="date-icon">📅</div>
-      <div class="date-info">
-        <div class="date-value" id="date-display"></div>
-        <div class="date-label">Дата тренировки</div>
-      </div>
-      <input type="date" id="date-input">
-    </div>
-
-    <!-- Упражнения -->
-    <div id="exercises-container"></div>
-
-    <!-- Добавить упражнение -->
-    <button class="btn btn-secondary" id="btn-add-exercise">
-      <span>＋</span> Добавить упражнение
-    </button>
-
-    <!-- Сохранить -->
-    <div class="save-section">
-      <button class="btn btn-primary" id="btn-save">
-        💾  Сохранить тренировку
-      </button>
-    </div>
-
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       PAGE: Профиль
-       ═══════════════════════════════════════ -->
-  <div id="page-profile" class="page">
-
-    <div class="page-header">
-      <h1>Профиль</h1>
-    </div>
-
-    <div class="profile-header">
-      <div class="profile-avatar">🏆</div>
-      <div class="profile-name">Атлет</div>
-      <div class="profile-sub">Ваш трекер тренировок</div>
-    </div>
-
-    <div class="stats-row">
-      <div class="card stat-card">
-        <div class="stat-value" id="stat-trainings">—</div>
-        <div class="stat-label">Тренировок</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value" id="stat-exercises">—</div>
-        <div class="stat-label">Упражнений</div>
-      </div>
-    </div>
-
-    <div class="section-title">История тренировок</div>
-    <div id="history-container">
-      <div class="empty-state">
-        <div class="empty-icon">📝</div>
-        <p>Пока нет тренировок.<br>Время начинать!</p>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       BOTTOM NAVIGATION
-       ═══════════════════════════════════════ -->
-  <nav class="bottom-nav">
-    <button class="nav-btn active" data-tab="training">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6.5 6.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/>
-        <path d="M21.5 6.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/>
-        <path d="M2 10h20"/>
-        <path d="M4.5 10v4"/>
-        <path d="M19.5 10v4"/>
-        <path d="M2 10l2.5-1.5"/>
-        <path d="M22 10l-2.5-1.5"/>
-        <rect x="7" y="8" width="10" height="4" rx="1"/>
-      </svg>
-      <span>Тренировка</span>
-    </button>
-    <button class="nav-btn" data-tab="profile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="8" r="4"/>
-        <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
-      </svg>
-      <span>Профиль</span>
-    </button>
-  </nav>
-
-</div>
-
-<!-- ═══════════════════════════════════════
-     MODAL: Выбор упражнения (bottom sheet)
-     ═══════════════════════════════════════ -->
-<div id="exercise-modal" class="modal">
-  <div class="modal-backdrop"></div>
-  <div class="modal-sheet">
-    <div class="sheet-handle"></div>
-    <div class="modal-title">Выберите упражнение</div>
-    <input type="text" class="search-input" placeholder="Поиск упражнения..." autocomplete="off">
-    <div id="exercise-list"></div>
-  </div>
-</div>
-
-<script src="app.js"></script>
+  <div id="root"></div>
 </body>
 </html>

@@ -27,7 +27,7 @@ const userIDKey contextKey = "userID"
 
 type TrainingData struct {
 	TrainingId int             `json:"trainingId,omitempty"`
-	Exercises  []*ExerciseData `json:"exercises"`
+	Exercises  []*ExerciseData `json:"exercises"` // хранит указатели чтобы /me хендлер правильно работал
 	Date       string          `json:"date"`
 }
 
