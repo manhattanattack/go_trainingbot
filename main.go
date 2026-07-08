@@ -26,15 +26,15 @@ type contextKey string
 const userIDKey contextKey = "userID"
 
 type TrainingData struct {
-	TrainingId int            `json:"trainingId,omitempty"`
-	Exercises  []ExerciseData `json:"exercises"`
-	Date       string         `json:"date"`
+	TrainingId int             `json:"trainingId,omitempty"`
+	Exercises  []*ExerciseData `json:"exercises"`
+	Date       string          `json:"date"`
 }
 
 type ExerciseData struct {
-	ExerciseId   int       `json:"exerciseId,omitempty"`
-	BaseExercise int       `json:"baseExercise"`
-	Sets         []SetData `json:"sets"`
+	ExerciseId   int        `json:"exerciseId,omitempty"`
+	BaseExercise int        `json:"baseExercise"`
+	Sets         []*SetData `json:"sets"`
 }
 
 type SetData struct {
@@ -214,12 +214,14 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	trainingsMap := make(map[any]*TrainingData) // мап тренировки
-	exercisesMap := make(map[any]*ExerciseData) // мап упражнений одной тренировки
-	var finalResponse []*TrainingData           //
+	// изначально хотел реализовать все это без указателей, но столкнулся с тем, что после того, как создал тренировку, не могу добавить в нее упражнение так, чтобы оно попало в финальный мап.
+	// для этого пришлось использовать указатели
+	trainingsMap := make(map[any]*TrainingData) // две мапы которые нужны по сути только для проверки в какой тренировки или упражнении я сейчас нахожусь, не попадают в финальный ответ
+	exercisesMap := make(map[any]*ExerciseData)
+	var exercise *ExerciseData
+	var training *TrainingData
+	var finalResponse []*TrainingData
 	for rows.Next() {
-		var training *TrainingData
-		var exercise *ExerciseData
 		var trainingId int
 		var date string
 		var exerciseId *int
@@ -232,40 +234,48 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(&trainingId, &date, &exerciseId, &baseExercise, &setId, &reps, &weight, &rpe, &note); err != nil {
 			log.Fatal(err)
 		}
-		_, exists := trainingsMap[trainingId]
-		if !exists { // создаю тренировку с пустым слайсом если ее нет
-			training = &TrainingData{
+		training = trainingsMap[trainingId] // смотрю, была ли у меня уже эта тренировка (существует ли в мапе)
+		if _, exists := trainingsMap[trainingId]; !exists {
+			training = &TrainingData{ // если нет, то создаю новую и беру на нее указатель в памяти (этот указатель останется неизменным до конца, на нем все как раз таки завязано)
 				TrainingId: trainingId,
 				Date:       date,
-				Exercises:  make([]ExerciseData, 0),
+				Exercises:  make([]*ExerciseData, 0),
 			}
-			trainingsMap[trainingId] = training             // добавляю в словарь тренировок под ключом с айди тренировки
-			finalResponse = append(finalResponse, training) // добавляю в финальный
+			trainingsMap[trainingId] = training             // добавляю в свой мап
+			finalResponse = append(finalResponse, training) // добавляю УКАЗАТЕЛЬ в финальный ответ. это сделано как раз для того, чтобы я потом мог по этому указателю добавить упражнение, и оно было здесь в финал респонсе.
 		}
 		if exerciseId != nil {
-			_, exists := exercisesMap[exerciseId]
-			if !exists { // если такого нет в словаре создаю упражнение с пустым слайсом сетов
-				exercise = &ExerciseData{
+			exercise = exercisesMap[exerciseId] // аналогично тренировкам проверяю и упражнения
+			if _, exists := exercisesMap[exerciseId]; !exists {
+				exercise = &ExerciseData{ // все аналогично
 					ExerciseId:   *exerciseId,
 					BaseExercise: *baseExercise,
-					Sets:         make([]SetData, 0),
+					Sets:         make([]*SetData, 0),
 				}
-				exercisesMap[exerciseId] = exercise                        // добавляю новое упражнение в словатрь под ключом с айди упражнения
-				training.Exercises = append(training.Exercises, *exercise) // добавляю в тренировку упражнение
+				exercisesMap[exerciseId] = exercise                       // все аналогично
+				training.Exercises = append(training.Exercises, exercise) // здесь самое крутое: training.Exercises, это тоже самое что (*training).Exercises. то есть го сам под капотом разыменует указатель. я, получив значение, лежащее по этому адресу, добавляю туда упражнение, и по этому же адресу лежит уже тренировка с упражнением. поэтому в массиве finalResponse будет она тоже.
 			}
 		}
 		if setId != nil {
-			newSet := SetData{
+			noteStr := ""
+			if note != nil {
+				noteStr = *note
+			}
+			newSet := &SetData{
 				SetId:  *setId,
 				Weight: *weight,
 				Reps:   *reps,
 				Rpe:    *rpe,
-				Note:   *note,
+				Note:   noteStr,
 			}
-			exercise.Sets = append(exercise.Sets, newSet)
+			// чтобы сеты добавлялись сделал в структурах слайсы которые хранят указатели на соответствующую инфу.
+			exercise.Sets = append(exercise.Sets, newSet) // не добавляется потому что training и exercises никак не связаны. exercise мы добавляем через указатель training, а set в exercise я не могу добавить тк не знаю какое по порядку упражнение.
 		}
 	}
-	json.NewEncoder(w).Encode(finalResponse)
+	err = json.NewEncoder(w).Encode(finalResponse) // узнать почему тут не надо разыменование
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func profileHandler(w http.ResponseWriter, r *http.Request) {
