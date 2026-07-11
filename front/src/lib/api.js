@@ -22,6 +22,44 @@ export async function fetchHistory() {
   }
 }
 
+const SAMPLE_PROFILE = { name: "Алекс Картер", height: 180, weight: 78 }
+
+export async function fetchProfile() {
+  try {
+    const res = await fetch("/api/profile", { headers: { Accept: "application/json" } })
+    if (!res.ok) throw new Error(`Не удалось загрузить профиль (${res.status})`)
+    return await res.json()
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn("[Kore] /api/profile недоступен, используются тестовые данные:", err.message)
+      return SAMPLE_PROFILE
+    }
+    throw err
+  }
+}
+
+export async function updateProfile(payload) {
+  try {
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      if (import.meta.env.DEV && res.status >= 500) {
+        console.warn("[Kore] /api/profile недоступен, изменение сохранено только для предпросмотра")
+        return payload
+      }
+      throw new Error(data.error || `Не удалось сохранить профиль (${res.status})`)
+    }
+    return data
+  } catch (err) {
+    if (import.meta.env.DEV && err instanceof TypeError) return payload
+    throw err
+  }
+}
+
 export async function saveTraining(payload) {
   const res = await fetch("/api/training", {
     method: "POST",

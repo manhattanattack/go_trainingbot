@@ -13,7 +13,7 @@
   --color-surface: #0b0b0d;
   --color-surface-2: #121317;
   --color-card: #1c1c1e;
-  --color-card-2: #232326;
+  --color-card-2: #252529;
   --color-hairline: rgba(255, 255, 255, 0.08);
   --color-hairline-strong: rgba(255, 255, 255, 0.14);
 
@@ -104,7 +104,9 @@ input[type="number"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .workout-cta-glow {
+  .workout-cta-glow,
+  .animate-sheet,
+  .animate-fade {
     animation: none;
   }
 }
