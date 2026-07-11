@@ -16,18 +16,8 @@ function getInitData() {
   }
 }
 
-export async function fetchMe() {
-  try {
-    const res = await fetch("/api/me", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
-    if (!res.ok) throw new Error(`Failed to get /me (${res.status})`)
-    return await res.json()
-  } catch (err) {
-    console.warn("[Kore] Не удалось добавить юзера:", err.message);
-    return null;
-  }
-}
 
-export async function syncTelegramUser() {
+export async function authUser() {
   const user = WebApp.initDataUnsafe?.user;
   
   // Если по какой-то причине открыли не в телеге (или данные еще не подтянулись)
@@ -37,7 +27,7 @@ export async function syncTelegramUser() {
   const displayName = user.username ? `@${user.username}` : user.first_name;
 
   try {
-    const res = await fetch("/api/profile", { 
+    const res = await fetch("/api/me", { 
       method: "PUT",
       headers: {
         "Authorization": `tma ${WebApp.initData}`,
@@ -46,8 +36,6 @@ export async function syncTelegramUser() {
       },
       body: JSON.stringify({
         name: displayName,
-        weight: 0,
-        height: 0,
       })
     });
 
@@ -93,7 +81,7 @@ export async function fetchProfile() {
 export async function updateProfile(payload) {
   try {
     const res = await fetch("/api/profile", {
-      method: "PUT",
+      method: "UPDATE",
       headers: { 'Authorization': `tma ${getInitData()}`, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
     })

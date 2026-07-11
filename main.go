@@ -272,7 +272,7 @@ func getTrainingsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type Profile struct {
-	Name   string  `json:"name,omitempty"`
+	Name   string  `json:"name"`
 	Height int     `json:"height"`
 	Weight float32 `json:"weight"`
 }
@@ -284,40 +284,43 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]any{"user_id": userId})
+	var name any
+	json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&name)
+	fmt.Println(name)
+	_, err = db.Exec("UPDATE users SET name = ? WHERE user_id = ?", name, userId)
+	json.NewEncoder(w).Encode(map[string]any{"user_id": userId, "name": name})
 }
 
-func profileHandler(w http.ResponseWriter, r *http.Request) {
+func getProfileHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(userIDKey)
-	encoder := json.NewEncoder(w)
-	switch r.Method {
-	case http.MethodGet:
-		row := db.QueryRow("SELECT name, weight, height FROM users WHERE user_id = ?", userId)
-		var name *string
-		var weight *float32
-		var height *int
-		if err := row.Scan(&name, &weight, &height); err != nil {
-			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't fetch profile data"})
-			if err != sql.ErrNoRows {
-				log.Println(err)
-				return
-			}
-		}
-		encoder.Encode(Profile{Name: *name, Weight: *weight, Height: *height})
-	case http.MethodPut:
-		profile := Profile{}
-		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
-		err := decoder.Decode(&profile)
-		if err != nil {
-			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't decode profile data"})
-		}
-		_, err = db.Exec("UPDATE users SET name = ?, weight = ?, height = ? WHERE user_id = ?", profile.Name, profile.Weight, profile.Height, userId)
-		if err != nil {
-			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't update profile data"})
+	row := db.QueryRow("SELECT name, weight, height FROM users WHERE user_id = ?", userId)
+	var name *string
+	var weight *float32
+	var height *int
+	if err := row.Scan(&name, &weight, &height); err != nil {
+		sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't fetch profile data"})
+		if err != sql.ErrNoRows {
 			log.Println(err)
+			return
 		}
-		encoder.Encode(profile)
 	}
+	json.NewEncoder(w).Encode(Profile{Name: *name, Weight: *weight, Height: *height})
+}
+
+func profileUpdateMetricsHandler(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(userIDKey)
+	profile := Profile{}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	err := decoder.Decode(&profile)
+	if err != nil {
+		sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't decode profile data"})
+	}
+	_, err = db.Exec("UPDATE users SET weight = ?, height = ? WHERE user_id = ?", profile.Weight, profile.Height, userId)
+	if err != nil {
+		sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't update profile data"})
+		log.Println(err)
+	}
+	json.NewEncoder(w).Encode(profile)
 }
 
 func createTables() {
@@ -386,11 +389,11 @@ func main() {
 	godotenv.Load()
 	initDB()
 	// http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
-	http.HandleFunc("GET /api/me", authMiddleware(http.HandlerFunc(meHandler)))
+	http.HandleFunc("PUT /api/me", authMiddleware(http.HandlerFunc(meHandler)))
 	http.HandleFunc("POST /api/training", authMiddleware(http.HandlerFunc(addTrainingHandler)))
 	http.HandleFunc("GET /api/getTrainings", authMiddleware(http.HandlerFunc(getTrainingsHandler)))
-	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
-	http.HandleFunc("PUT /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
+	http.HandleFunc("UPDATE /api/profile/updateMetrics", authMiddleware(http.HandlerFunc(profileUpdateMetricsHandler)))
+	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(getProfileHandler)))
 	// http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
 	// http.HandleFunc("GET /me", authMiddleware(meHandler))
 
