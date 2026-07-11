@@ -155,7 +155,7 @@ export default function TrainingPage({ history = [], historyLoading = false, onS
                   type="button"
                   onClick={repeatLastTraining}
                   aria-label={`Повторить тренировку ${relativeDay(lastTraining.date)}: ${lastExerciseNames}`}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-hairline bg-card p-4 text-left transition-colors active:bg-card-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="tap-feedback flex w-full items-center gap-3 rounded-2xl border border-hairline bg-card p-4 text-left active:bg-card-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
                     <RotateCcw size={19} strokeWidth={2.25} />
@@ -192,7 +192,7 @@ export default function TrainingPage({ history = [], historyLoading = false, onS
 
           <button
             onClick={() => setPickerOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-hairline bg-card py-3.5 font-display text-[15px] font-600 text-ink transition-colors active:bg-card-2"
+            className="tap-feedback flex w-full items-center justify-center gap-2 rounded-2xl border border-hairline bg-card py-3.5 font-display text-[15px] font-600 text-ink active:bg-card-2"
           >
             <Plus size={18} strokeWidth={2.5} className="text-accent" />
             Добавить упражнение
@@ -223,7 +223,7 @@ export default function TrainingPage({ history = [], historyLoading = false, onS
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 transition-transform active:scale-[0.98] disabled:opacity-60"
+            className="tap-feedback flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 disabled:opacity-60"
           >
             {saving ? (
               <>

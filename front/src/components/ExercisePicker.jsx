@@ -5,15 +5,26 @@ import { EXERCISES } from "../lib/exercises.js"
 
 export default function ExercisePicker({ open, onClose, onSelect }) {
   const [query, setQuery] = useState("")
+  const [closing, setClosing] = useState(false)
   const inputRef = useRef(null)
+  const closeTimerRef = useRef(null)
 
   useEffect(() => {
     if (open) {
+      setClosing(false)
       setQuery("")
       const t = setTimeout(() => inputRef.current?.focus(), 250)
       return () => clearTimeout(t)
     }
   }, [open])
+
+  useEffect(() => () => clearTimeout(closeTimerRef.current), [])
+
+  const requestClose = (afterClose = onClose) => {
+    if (closing) return
+    setClosing(true)
+    closeTimerRef.current = setTimeout(afterClose, 240)
+  }
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -31,11 +42,11 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Добавить упражнение">
+    <div className={`fixed inset-0 z-50 flex flex-col justify-end ${closing ? "sheet-closing" : ""}`} role="dialog" aria-modal="true" aria-label="Добавить упражнение">
       <button
         aria-label="Закрыть"
-        onClick={onClose}
-        className="animate-fade absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => requestClose()}
+        className="animate-fade absolute inset-0 bg-surface/80 backdrop-blur-sm"
       />
       <div className="animate-sheet relative mx-auto flex h-[82vh] w-full max-w-md flex-col rounded-t-[1.75rem] border-t border-hairline-strong bg-surface-2">
         <div className="flex flex-col items-center pt-3">
@@ -44,7 +55,7 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
         <div className="flex items-center justify-between px-5 pb-3 pt-3">
           <h2 className="font-display text-lg font-700 text-ink">Добавить упражнение</h2>
           <button
-            onClick={onClose}
+            onClick={() => requestClose()}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-ink-muted active:bg-card-2"
             aria-label="Закрыть"
           >
@@ -82,7 +93,7 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
                   {items.map((ex) => (
                     <button
                       key={ex.id}
-                      onClick={() => onSelect(ex.id)}
+                      onClick={() => requestClose(() => onSelect(ex.id))}
                       className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors active:bg-card-2"
                     >
                       <span className="flex min-w-0 items-center gap-3">

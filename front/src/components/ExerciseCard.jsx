@@ -96,7 +96,7 @@ function SetCard({ set, number, collapsed, canDelete, onExpand, onChange, onDupl
         style={{
           transform: `translateX(${offset}px)`,
           touchAction: "pan-y",
-          transition: dragging ? "none" : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: dragging ? "none" : "transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1)",
         }}
         className="relative z-10 border border-hairline bg-card-2 px-3 py-3"
       >
@@ -210,21 +210,36 @@ function SetCard({ set, number, collapsed, canDelete, onExpand, onChange, onDupl
 }
 
 function RpeHelpSheet({ open, onClose }) {
+  const [closing, setClosing] = useState(false)
+  const closeTimerRef = useRef(null)
+
+  useEffect(() => {
+    if (open) setClosing(false)
+  }, [open])
+
+  useEffect(() => () => clearTimeout(closeTimerRef.current), [])
+
+  const requestClose = () => {
+    if (closing) return
+    setClosing(true)
+    closeTimerRef.current = setTimeout(onClose, 240)
+  }
+
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
+    <div className={`fixed inset-0 z-50 flex items-end justify-center ${closing ? "sheet-closing" : ""}`} role="presentation">
       <button
         type="button"
         aria-label="Закрыть справку RPE"
-        onClick={onClose}
-        className="absolute inset-0 bg-surface/80 backdrop-blur-sm"
+        onClick={requestClose}
+        className="animate-fade absolute inset-0 bg-surface/80 backdrop-blur-sm"
       />
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="rpe-help-title"
-        className="relative z-10 w-full max-w-md rounded-t-3xl border border-hairline bg-card px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 shadow-2xl"
+        className="animate-sheet relative z-10 w-full max-w-md rounded-t-3xl border border-hairline bg-card px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 shadow-2xl"
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-hairline-strong" aria-hidden="true" />
         <div className="flex items-start justify-between gap-4">
@@ -236,7 +251,7 @@ function RpeHelpSheet({ open, onClose }) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Закрыть"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card-2 text-ink-muted active:text-ink"
           >
@@ -248,7 +263,7 @@ function RpeHelpSheet({ open, onClose }) {
         </p>
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           className="mt-5 w-full rounded-2xl bg-accent py-3.5 font-display text-[15px] font-700 text-surface active:opacity-90"
         >
           Понятно

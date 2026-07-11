@@ -68,41 +68,29 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
           </h1>
         </div>
 
-        {/* Calendar */}
-        <section className="px-4">
-          <div className="rounded-2xl border border-hairline bg-card p-4">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-[13px] font-600 uppercase tracking-wide text-ink-faint">Последние 15 дней</h2>
+        {/* Calendar and stats */}
+        {loading ? (
+          <OverviewMetricsSkeleton />
+        ) : (
+          <div className="content-reveal flex flex-col gap-6">
+            <section className="px-4">
+              <div className="rounded-2xl border border-hairline bg-card p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h2 className="text-[13px] font-600 uppercase tracking-wide text-ink-faint">Последние 15 дней</h2>
+                  <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
+                    <span className="text-[13px] font-600 text-ink">Серия: {weekStreak} {weekLabel(weekStreak)}</span>
+                    <span className="text-[12px] font-500 text-ink-muted">{recentTrainingCount} {trainingLabel(recentTrainingCount)}</span>
+                  </div>
+                </div>
+                <CalendarStrip workoutDates={workoutDates} history={history} days={15} />
               </div>
-              <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
-                <span className="text-[13px] font-600 text-ink">
-                  Серия: {weekStreak} {weekLabel(weekStreak)}
-                </span>
-                <span className="text-[12px] font-500 text-ink-muted">
-                  {recentTrainingCount} {trainingLabel(recentTrainingCount)}
-                </span>
-              </div>
-            </div>
-            <CalendarStrip workoutDates={workoutDates} history={history} days={15} />
+            </section>
+            <section className="grid grid-cols-2 gap-3 px-4">
+              <StatCard icon={TrendingUp} label="Тоннаж за неделю" value={`${formatVolume(weeklyTonnage)}`} unit="кг" />
+              <StatCard icon={Flame} label="На этой неделе" value={`${weeklyCount}`} unit={trainingLabel(weeklyCount)} />
+            </section>
           </div>
-        </section>
-
-        {/* Stats */}
-        <section className="grid grid-cols-2 gap-3 px-4">
-          <StatCard
-            icon={TrendingUp}
-            label="Тоннаж за неделю"
-            value={`${formatVolume(weeklyTonnage)}`}
-            unit="кг"
-          />
-          <StatCard
-            icon={Flame}
-            label="На этой неделе"
-            value={`${weeklyCount}`}
-            unit={trainingLabel(weeklyCount)}
-          />
-        </section>
+        )}
 
         {/* Start workout */}
         <StartWorkoutButton onStart={onStart} shouldGlow={shouldGlow} />
@@ -130,7 +118,7 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
                 <button
                   type="button"
                   onClick={onShowAll}
-                  className="w-full rounded-xl py-2.5 text-[14px] font-600 text-accent transition-colors active:bg-accent-soft"
+                  className="tap-feedback w-full rounded-xl py-2.5 text-[14px] font-600 text-accent active:bg-accent-soft"
                 >
                   Показать всё
                 </button>
@@ -166,7 +154,7 @@ function StartWorkoutButton({ onStart, shouldGlow }) {
       <button
         type="button"
         onClick={onStart}
-        className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 transition-transform active:scale-[0.98] ${shouldGlow ? "workout-cta-glow" : ""}`}
+        className={`tap-feedback flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 ${shouldGlow ? "workout-cta-glow" : ""}`}
       >
         <Play size={19} fill="currentColor" strokeWidth={0} />
         Начать тренировку
@@ -186,6 +174,30 @@ function StatCard({ icon: Icon, label, value, unit }) {
         <span className="font-display text-[28px] font-800 leading-none tracking-tight text-ink">{value}</span>
         <span className="text-[13px] font-500 text-ink-muted">{unit}</span>
       </div>
+    </div>
+  )
+}
+
+function OverviewMetricsSkeleton() {
+  return (
+    <div className="flex flex-col gap-6" aria-label="Загрузка показателей">
+      <section className="px-4">
+        <div className="rounded-2xl border border-hairline bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="skeleton-shimmer h-3.5 w-28 rounded" />
+            <div className="flex flex-col items-end gap-2">
+              <div className="skeleton-shimmer h-3.5 w-24 rounded" />
+              <div className="skeleton-shimmer h-3 w-20 rounded" />
+            </div>
+          </div>
+          <div className="mt-5 flex justify-between gap-2">
+            {[0, 1, 2, 3, 4, 5, 6].map((day) => <div key={day} className="skeleton-shimmer h-9 w-9 rounded-full" />)}
+          </div>
+        </div>
+      </section>
+      <section className="grid grid-cols-2 gap-3 px-4">
+        {[0, 1].map((card) => <div key={card} className="skeleton-shimmer h-28 rounded-2xl border border-hairline" />)}
+      </section>
     </div>
   )
 }

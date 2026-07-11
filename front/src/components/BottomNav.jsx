@@ -23,7 +23,7 @@ export default function BottomNav({ active, onChange }) {
               type="button"
               onClick={() => onChange(id)}
               aria-current={isActive ? "page" : undefined}
-              className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 transition-colors"
+              className="tap-feedback flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 transition-colors"
             >
               <Icon
                 size={22}

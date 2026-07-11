@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   AlertCircle,
   Check,
@@ -67,21 +67,33 @@ export default function ProfilePage({
       <TopBar title="Профиль" />
 
       <div className="flex flex-col gap-6 pt-5">
-        <section className="flex flex-col items-center px-4">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-hairline-strong bg-card">
-            <span className="font-display text-[28px] font-800 text-accent">{initial}</span>
-          </div>
-          <h1 className="mt-3 text-balance text-center font-display text-[20px] font-800 tracking-tight text-ink">
-            {displayName}
-          </h1>
-          <p className="text-[13px] font-500 text-ink-muted">С нами с 2023 года</p>
-        </section>
+        {profileLoading ? (
+          <section className="flex flex-col items-center px-4" aria-label="Загрузка профиля">
+            <div className="skeleton-shimmer h-20 w-20 rounded-full" />
+            <div className="skeleton-shimmer mt-3 h-5 w-32 rounded" />
+            <div className="skeleton-shimmer mt-2 h-3 w-24 rounded" />
+          </section>
+        ) : (
+          <section className="content-reveal flex flex-col items-center px-4">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-hairline-strong bg-card">
+              <span className="font-display text-[28px] font-800 text-accent">{initial}</span>
+            </div>
+            <h1 className="mt-3 text-balance text-center font-display text-[20px] font-800 tracking-tight text-ink">{displayName}</h1>
+            <p className="text-[13px] font-500 text-ink-muted">С нами с 2023 года</p>
+          </section>
+        )}
 
-        <section className="grid grid-cols-3 gap-3 px-4" aria-label="Общая статистика">
-          <StatTile icon={Layers} value={formatVolume(stats.volume)} unit="кг" label="Объём" />
-          <StatTile icon={Dumbbell} value={stats.workouts} label="Тренировки" />
-          <StatTile icon={Flame} value={stats.sets} label="Подходы" />
-        </section>
+        {loading ? (
+          <section className="grid grid-cols-3 gap-3 px-4" aria-label="Загрузка статистики">
+            {[0, 1, 2].map((item) => <div key={item} className="skeleton-shimmer h-24 rounded-2xl border border-hairline" />)}
+          </section>
+        ) : (
+          <section className="content-reveal grid grid-cols-3 gap-3 px-4" aria-label="Общая статистика">
+            <StatTile icon={Layers} value={formatVolume(stats.volume)} unit="кг" label="Объём" />
+            <StatTile icon={Dumbbell} value={stats.workouts} label="Тренировки" />
+            <StatTile icon={Flame} value={stats.sets} label="Подходы" />
+          </section>
+        )}
 
         <section className="px-4" aria-labelledby="parameters-title">
           <div className="flex items-end justify-between px-2 pb-2">
@@ -105,8 +117,17 @@ export default function ProfilePage({
             className="grid w-full grid-cols-2 overflow-hidden rounded-2xl border border-hairline bg-card text-left active:bg-card-2"
             aria-label="Изменить рост и вес"
           >
-            <Parameter icon={Ruler} label="Рост" value={profileLoading ? "—" : profile.height || "—"} unit="см" />
-            <Parameter icon={Scale} label="Вес" value={profileLoading ? "—" : profile.weight || "—"} unit="кг" bordered />
+            {profileLoading ? (
+              <>
+                <span className="skeleton-shimmer m-4 h-14 rounded-xl" />
+                <span className="skeleton-shimmer m-4 h-14 rounded-xl" />
+              </>
+            ) : (
+              <>
+                <Parameter icon={Ruler} label="Рост" value={profile.height || "—"} unit="см" />
+                <Parameter icon={Scale} label="Вес" value={profile.weight || "—"} unit="кг" bordered />
+              </>
+            )}
           </button>
         </section>
 
@@ -267,14 +288,25 @@ function HistorySkeleton() {
 }
 
 function Sheet({ title, onClose, children }) {
+  const [closing, setClosing] = useState(false)
+  const closeTimerRef = useRef(null)
+
+  const requestClose = () => {
+    if (closing) return
+    setClosing(true)
+    closeTimerRef.current = setTimeout(onClose, 240)
+  }
+
   useEffect(() => {
-    const closeOnEscape = (event) => event.key === "Escape" && onClose()
+    const closeOnEscape = (event) => event.key === "Escape" && requestClose()
     document.addEventListener("keydown", closeOnEscape)
     return () => document.removeEventListener("keydown", closeOnEscape)
-  }, [onClose])
+  }, [closing])
+
+  useEffect(() => () => clearTimeout(closeTimerRef.current), [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-surface/80 backdrop-blur-sm animate-fade" role="presentation" onMouseDown={onClose}>
+    <div className={`fixed inset-0 z-50 flex items-end justify-center bg-surface/80 backdrop-blur-sm animate-fade ${closing ? "sheet-closing" : ""}`} role="presentation" onMouseDown={requestClose}>
       <section
         role="dialog"
         aria-modal="true"
@@ -285,7 +317,7 @@ function Sheet({ title, onClose, children }) {
         <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-hairline-strong" />
         <header className="flex items-center justify-between px-5 py-4">
           <h2 id="sheet-title" className="font-display text-[18px] font-700 text-ink">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-muted active:bg-card-2">
+          <button type="button" onClick={requestClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-muted active:bg-card-2">
             <X size={20} />
           </button>
         </header>

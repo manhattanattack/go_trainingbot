@@ -15,6 +15,7 @@ export default function App() {
   const [profile, setProfile] = useState({ name: "", height: 0, weight: 0 })
   const [profileLoading, setProfileLoading] = useState(true)
   const [workoutDetail, setWorkoutDetail] = useState(null)
+  const [splashPhase, setSplashPhase] = useState("visible")
 
   const openWorkout = useCallback((training) => {
     setWorkoutDetail({ training, returnTab: tab })
@@ -48,15 +49,30 @@ export default function App() {
       .finally(() => setProfileLoading(false))
   }, [load])
 
+  useEffect(() => {
+    if (loading || profileLoading || splashPhase !== "visible") return
+    const exitTimer = window.setTimeout(() => setSplashPhase("leaving"), 650)
+    return () => window.clearTimeout(exitTimer)
+  }, [loading, profileLoading, splashPhase])
+
+  useEffect(() => {
+    if (splashPhase !== "leaving") return
+    const removeTimer = window.setTimeout(() => setSplashPhase("hidden"), 350)
+    return () => window.clearTimeout(removeTimer)
+  }, [splashPhase])
+
   const saveProfile = useCallback(async (nextProfile) => {
     const saved = await updateProfile(nextProfile)
     setProfile(saved)
     return saved
   }, [])
 
+  const screenKey = workoutDetail ? `workout-${workoutDetail.training.trainingId}` : tab
+
   return (
     <div className="min-h-full bg-surface">
       <main className={`mx-auto min-h-full max-w-md ${workoutDetail ? "" : "pb-24"}`}>
+        <div key={screenKey} className="page-enter">
         {workoutDetail ? (
           <WorkoutDetailPage
             training={workoutDetail.training}
@@ -97,8 +113,17 @@ export default function App() {
             onOpenWorkout={openWorkout}
           />
         )}
+        </div>
       </main>
       {!workoutDetail && <BottomNav active={tab} onChange={setTab} />}
+      {splashPhase !== "hidden" && (
+        <div
+          className={`splash-screen ${splashPhase === "leaving" ? "splash-screen--leaving" : ""}`}
+          aria-hidden="true"
+        >
+          <span className="splash-logo font-display">kOre</span>
+        </div>
+      )}
     </div>
   )
 }

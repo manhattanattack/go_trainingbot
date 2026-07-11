@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertCircle, Check, ChevronDown, Dumbbell, Search, TrendingUp, X } from "lucide-react"
 import {
   Bar,
@@ -61,14 +61,18 @@ export default function ProgressPage({ history, loading, error, onRetry }) {
           <ProgressSkeleton />
         ) : error ? (
           <StateCard icon={AlertCircle} title="Не удалось загрузить прогресс" text={error}>
-            <button type="button" onClick={onRetry} className="min-h-11 rounded-full bg-card-2 px-4 text-[13px] font-600 text-ink">Попробовать снова</button>
+            <button type="button" onClick={onRetry} className="tap-feedback min-h-11 rounded-full bg-card-2 px-4 text-[13px] font-600 text-ink">Попробовать снова</button>
           </StateCard>
-        ) : tab === "strength" ? (
-          <StrengthSection history={history} />
-        ) : tab === "volume" ? (
-          <MuscleVolumeSection history={history} period={period} onPeriodChange={setPeriod} />
         ) : (
-          <TonnageSection history={history} period={period} onPeriodChange={setPeriod} />
+          <div key={tab} className="content-reveal">
+            {tab === "strength" ? (
+              <StrengthSection history={history} />
+            ) : tab === "volume" ? (
+              <MuscleVolumeSection history={history} period={period} onPeriodChange={setPeriod} />
+            ) : (
+              <TonnageSection history={history} period={period} onPeriodChange={setPeriod} />
+            )}
+          </div>
         )}
       </main>
     </>
@@ -340,30 +344,46 @@ function StateCard({ icon: Icon, title, text, children }) {
 function ProgressSkeleton() {
   return (
     <div className="flex flex-col gap-4" aria-label="Загрузка прогресса">
-      <div className="h-14 animate-pulse rounded-2xl bg-card" />
-      <div className="h-96 animate-pulse rounded-2xl bg-card" />
-      <div className="grid grid-cols-3 gap-2">{[0, 1, 2].map((item) => <div key={item} className="h-28 animate-pulse rounded-2xl bg-card" />)}</div>
+      <div className="skeleton-shimmer h-14 rounded-2xl border border-hairline" />
+      <div className="overflow-hidden rounded-2xl border border-hairline bg-card p-4">
+        <div className="skeleton-shimmer h-3 w-24 rounded" />
+        <div className="skeleton-shimmer mt-2 h-5 w-40 rounded" />
+        <div className="mt-8 flex h-64 items-end gap-3">
+          {[42, 68, 54, 82, 64, 92].map((height, item) => <div key={item} className="skeleton-shimmer flex-1 rounded-t-lg" style={{ height: `${height}%` }} />)}
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">{[0, 1, 2].map((item) => <div key={item} className="skeleton-shimmer h-28 rounded-2xl border border-hairline" />)}</div>
     </div>
   )
 }
 
 function ExerciseSheet({ exerciseIds, selected, onSelect, onClose }) {
   const [query, setQuery] = useState("")
+  const [closing, setClosing] = useState(false)
+  const closeTimerRef = useRef(null)
   const options = exerciseIds.map(getExercise).filter((exercise) => exercise.name.toLowerCase().includes(query.trim().toLowerCase()))
 
+  const requestClose = (afterClose = onClose) => {
+    if (closing) return
+    setClosing(true)
+    closeTimerRef.current = setTimeout(afterClose, 240)
+  }
+
   useEffect(() => {
-    const closeOnEscape = (event) => event.key === "Escape" && onClose()
+    const closeOnEscape = (event) => event.key === "Escape" && requestClose()
     document.addEventListener("keydown", closeOnEscape)
     return () => document.removeEventListener("keydown", closeOnEscape)
-  }, [onClose])
+  }, [closing])
+
+  useEffect(() => () => clearTimeout(closeTimerRef.current), [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-surface/80 backdrop-blur-sm animate-fade" role="presentation" onMouseDown={onClose}>
+    <div className={`fixed inset-0 z-50 flex items-end justify-center bg-surface/80 backdrop-blur-sm animate-fade ${closing ? "sheet-closing" : ""}`} role="presentation" onMouseDown={() => requestClose()}>
       <section role="dialog" aria-modal="true" aria-labelledby="exercise-sheet-title" className="animate-sheet max-h-[82vh] w-full max-w-md overflow-hidden rounded-t-2xl border border-hairline-strong bg-surface-2" onMouseDown={(event) => event.stopPropagation()}>
         <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-hairline-strong" />
         <header className="flex items-center justify-between px-5 py-4">
           <h2 id="exercise-sheet-title" className="font-display text-[18px] font-700 text-ink">Выберите упражнение</h2>
-          <button type="button" onClick={onClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-muted active:bg-card-2"><X size={20} /></button>
+          <button type="button" onClick={() => requestClose()} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-muted active:bg-card-2"><X size={20} /></button>
         </header>
         <div className="px-5 pb-3">
           <label className="flex h-12 items-center gap-3 rounded-2xl border border-hairline-strong bg-card px-4 focus-within:border-accent">
@@ -374,7 +394,7 @@ function ExerciseSheet({ exerciseIds, selected, onSelect, onClose }) {
         </div>
         <div className="max-h-[58vh] overflow-y-auto px-3 pb-8">
           {options.map((exercise) => (
-            <button key={exercise.id} type="button" onClick={() => onSelect(exercise.id)} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-3 text-left active:bg-card">
+            <button key={exercise.id} type="button" onClick={() => requestClose(() => onSelect(exercise.id))} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-3 text-left active:bg-card">
               <span className="min-w-0"><span className="block truncate text-[14px] font-600 text-ink">{exercise.name}</span><span className="mt-0.5 block text-[11px] text-ink-faint">{exercise.group}</span></span>
               {selected === exercise.id && <Check size={18} className="shrink-0 text-accent" />}
             </button>
