@@ -80,7 +80,7 @@ export async function fetchProfile() {
 
 export async function updateProfile(payload) {
   try {
-    const res = await fetch("/api/profile", {
+    const res = await fetch("/api/profile/updateMetrics", {
       method: "UPDATE",
       headers: { 'Authorization': `tma ${getInitData()}`, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -88,7 +88,7 @@ export async function updateProfile(payload) {
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
       if (import.meta.env.DEV && res.status >= 500) {
-        console.warn("[Kore] /api/profile недоступен, изменение сохранено только для предпросмотра")
+        console.warn("[Kore] /api/profile/updateMetrics недоступен, изменение сохранено только для предпросмотра")
         return payload
       }
       throw new Error(data.error || `Не удалось сохранить профиль (${res.status})`)

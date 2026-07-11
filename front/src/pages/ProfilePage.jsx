@@ -60,7 +60,7 @@ export default function ProfilePage({
 
   const selectedExercise = EXERCISES.find((exercise) => exercise.id === exerciseId)
   const displayName = profile.name?.trim() || "???"
-  const initial = displayName.slice(0, 1).toUpperCase() ? displayName[0] != "@" : displayName.slice(1, 2).toUpperCase()
+  const initial = (displayName.startsWith("@") ? displayName[1] : displayName[0])?.toUpperCase() || "";
 
   return (
     <>
