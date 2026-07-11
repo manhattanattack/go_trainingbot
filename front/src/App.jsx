@@ -49,6 +49,23 @@ export default function App() {
     }
   }, [])
 
+  async function initProfile() {
+    setProfileLoading(true)
+    try {
+      await fetchMe()
+      // Сначала молча шлем PUT-запрос с ником и ID из телеги
+      await syncTelegramUser()
+      // Сразу после этого запрашиваем обновленный профиль из базы
+      const data = await fetchProfile()
+      setProfile(data)
+    } catch (err) {
+      console.warn("Ошибка инициализации профиля:", err)
+      setProfile({ name: "???", height: 0, weight: 0 })
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
   useEffect(() => {
     try {
     import("@twa-dev/sdk").then((module) => {
@@ -57,25 +74,8 @@ export default function App() {
     } catch (e) {
       console.error("TMA init failed", e);
     }
-    load()
-    async function initProfile() {
-      setProfileLoading(true)
-      try {
-        // Сначала молча шлем PUT-запрос с ником и ID из телеги
-        await syncTelegramUser()
-        // Сразу после этого запрашиваем обновленный профиль из базы
-        const data = await fetchProfile()
-        setProfile(data)
-      } catch (err) {
-        console.warn("Ошибка инициализации профиля:", err)
-        setProfile({ name: "???", height: 0, weight: 0 })
-      } finally {
-        setProfileLoading(false)
-      }
-    }
-
     initProfile()
-    fetchProfile()
+    load()
       .then(setProfile)
       .catch(() => setProfile({ name: "???", height: 0, weight: 0 }))
       .finally(() => setProfileLoading(false))

@@ -16,6 +16,17 @@ function getInitData() {
   }
 }
 
+export async function fetchMe() {
+  try {
+    const res = await fetch("/api/me", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
+    if (!res.ok) throw new Error(`Failed to get /me (${res.status})`)
+    return await res.json()
+  } catch (err) {
+    console.warn("[Kore] Не удалось добавить юзера:", err.message);
+    return null;
+  }
+}
+
 export async function syncTelegramUser() {
   const user = WebApp.initDataUnsafe?.user;
   

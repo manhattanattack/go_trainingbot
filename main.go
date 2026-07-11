@@ -190,11 +190,6 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 func getTrainingsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("me")
 	userId := r.Context().Value(userIDKey)
-	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId) // если нет юзера добавляю его
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	// собираю всю инфу по юзеру, лефт джоины относительно таблицы транировок, потому что упражнений и сетов может не быть
 	rows, err := db.Query(` 
 	SELECT 
@@ -283,14 +278,19 @@ type Profile struct {
 	Weight float32 `json:"weight"`
 }
 
-func profileHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("profile")
+func meHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(userIDKey)
-	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId)
+	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id, weight, height) VALUES (?, 0, 0)", userId)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	json.NewEncoder(w).Encode(map[string]any{"user_id": userId})
+}
+
+func profileHandler(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(userIDKey)
+	log.Println("profile")
 	encoder := json.NewEncoder(w)
 	switch r.Method {
 	case http.MethodGet:
@@ -313,7 +313,7 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't decode profile data"})
 		}
-		db.Exec("UPDATE users SET weight = ?, height = ?", profile.Weight, profile.Height)
+		db.Exec("UPDATE users SET name = ?, weight = ?, height = ? WHERE user_id = ?", profile.Name, profile.Weight, profile.Height, userId)
 		encoder.Encode(profile)
 	}
 }
@@ -384,6 +384,7 @@ func main() {
 	godotenv.Load()
 	initDB()
 	// http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
+	http.HandleFunc("GET /api/me", authMiddleware(http.HandlerFunc(meHandler)))
 	http.HandleFunc("POST /api/training", authMiddleware(http.HandlerFunc(addTrainingHandler)))
 	http.HandleFunc("GET /api/getTrainings", authMiddleware(http.HandlerFunc(getTrainingsHandler)))
 	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
