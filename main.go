@@ -41,7 +41,7 @@ type SetData struct {
 	SetId  int     `json:"setId,omitempty"`
 	Weight float32 `json:"weight"`
 	Reps   int     `json:"reps"`
-	Rpe    int     `json:"rpe"`
+	Rpe    float32 `json:"rpe"`
 	Note   string  `json:"note,omitempty"`
 }
 
@@ -188,7 +188,6 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTrainingsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("me")
 	userId := r.Context().Value(userIDKey)
 	// собираю всю инфу по юзеру, лефт джоины относительно таблицы транировок, потому что упражнений и сетов может не быть
 	rows, err := db.Query(` 
@@ -223,7 +222,7 @@ func getTrainingsHandler(w http.ResponseWriter, r *http.Request) {
 		var setId *int
 		var reps *int
 		var weight *float32
-		var rpe *int
+		var rpe *float32
 		var note *string
 		if err := rows.Scan(&trainingId, &date, &exerciseId, &baseExercise, &setId, &reps, &weight, &rpe, &note); err != nil {
 			log.Fatal(err)
@@ -290,7 +289,6 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 
 func profileHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(userIDKey)
-	log.Println("profile")
 	encoder := json.NewEncoder(w)
 	switch r.Method {
 	case http.MethodGet:
