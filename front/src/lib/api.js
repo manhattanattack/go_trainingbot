@@ -18,7 +18,7 @@ function getInitData() {
 
 export async function fetchHistory() {
   try {
-    const res = await fetch("/me", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
+    const res = await fetch("/api/me", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
     if (!res.ok) throw new Error(`Failed to load history (${res.status})`)
     const data = await res.json()
     return Array.isArray(data) ? data : []
