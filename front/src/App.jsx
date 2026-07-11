@@ -5,7 +5,7 @@ import TrainingPage from "./pages/TrainingPage.jsx"
 import ProfilePage from "./pages/ProfilePage.jsx"
 import ProgressPage from "./pages/ProgressPage.jsx"
 import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
-import { fetchMe, syncTelegramUser, fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
+import { authUser, fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 import { toISODate } from "./lib/format.js"
 
 
@@ -52,9 +52,7 @@ export default function App() {
   async function initProfile() {
     setProfileLoading(true)
     try {
-      await fetchMe()
-      // Сначала молча шлем PUT-запрос с ником и ID из телеги
-      await syncTelegramUser()
+      await authUser()
       // Сразу после этого запрашиваем обновленный профиль из базы
       const data = await fetchProfile()
       setProfile(data)
