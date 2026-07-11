@@ -1,5 +1,5 @@
 import { SAMPLE_HISTORY } from "./sampleData.js"
-
+import WebApp from "@twa-dev/sdk";
 // API layer for the Go backend (proxied to :8080 via vite.config.js).
 //
 // NOTE: When the backend is unreachable (e.g. previewing without the Go
@@ -7,9 +7,12 @@ import { SAMPLE_HISTORY } from "./sampleData.js"
 // In your real environment the proxy hits the live backend and this
 // fallback never triggers.
 
+WebApp.ready()
+const initData = WebApp.initData;
+
 export async function fetchHistory() {
   try {
-    const res = await fetch("/me", { headers: { Accept: "application/json" } })
+    const res = await fetch("/me", { headers: { 'Authorization': `tma ${initData}`, Accept: "application/json" } })
     if (!res.ok) throw new Error(`Failed to load history (${res.status})`)
     const data = await res.json()
     return Array.isArray(data) ? data : []
@@ -23,7 +26,6 @@ export async function fetchHistory() {
 }
 
 const SAMPLE_PROFILE = { name: "???", height: 0, weight: 0 }
-const initData = WebApp.initData;
 
 export async function fetchProfile() {
   try {

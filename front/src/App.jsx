@@ -25,12 +25,6 @@ export default function App() {
   const [workoutDetail, setWorkoutDetail] = useState(null)
   const [splashPhase, setSplashPhase] = useState("visible")
 
-  useEffect(() => {
-    if (window.Telegram?.WebApp) {
-      WebApp.ready();
-      WebApp.expand(); // разворачивает на весь экран, опционально но обычно нужно
-    }
-  }, []);
 
   const openWorkout = useCallback((training) => {
     setWorkoutDetail({ training, returnTab: tab })
