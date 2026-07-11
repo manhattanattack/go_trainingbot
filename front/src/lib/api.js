@@ -23,10 +23,11 @@ export async function fetchHistory() {
 }
 
 const SAMPLE_PROFILE = { name: "???", height: 0, weight: 0 }
+const initData = WebApp.initData;
 
 export async function fetchProfile() {
   try {
-    const res = await fetch("/api/profile", { headers: { Accept: "application/json" } })
+    const res = await fetch("/api/profile", { headers: { 'Authorization': `tma ${initData}`, Accept: "application/json" } })
     if (!res.ok) throw new Error(`Не удалось загрузить профиль (${res.status})`)
     return await res.json()
   } catch (err) {
@@ -42,7 +43,7 @@ export async function updateProfile(payload) {
   try {
     const res = await fetch("/api/profile", {
       method: "PUT",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { 'Authorization': `tma ${initData}`, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
     })
     const data = await res.json().catch(() => ({}))
@@ -63,7 +64,7 @@ export async function updateProfile(payload) {
 export async function saveTraining(payload) {
   const res = await fetch("/api/training", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 'Authorization': `tma ${initData}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
   if (!res.ok) throw new Error(`Failed to save workout (${res.status})`)

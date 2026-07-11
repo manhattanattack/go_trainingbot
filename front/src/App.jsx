@@ -7,6 +7,8 @@ import ProgressPage from "./pages/ProgressPage.jsx"
 import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
 import { fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 import { toISODate } from "./lib/format.js"
+import WebApp from '@twa-dev/sdk';
+
 
 export default function App() {
   const [tab, setTab] = useState("overview")
@@ -22,6 +24,13 @@ export default function App() {
   const [profileLoading, setProfileLoading] = useState(true)
   const [workoutDetail, setWorkoutDetail] = useState(null)
   const [splashPhase, setSplashPhase] = useState("visible")
+
+  useEffect(() => {
+    if (window.Telegram?.WebApp) {
+      WebApp.ready();
+      WebApp.expand(); // разворачивает на весь экран, опционально но обычно нужно
+    }
+  }, []);
 
   const openWorkout = useCallback((training) => {
     setWorkoutDetail({ training, returnTab: tab })
