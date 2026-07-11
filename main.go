@@ -278,29 +278,40 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type Profile struct {
+	Name   string  `json:"name,omitempty"`
+	Height int     `json:"height"`
+	Weight float32 `json:"weight"`
+}
+
 func profileHandler(w http.ResponseWriter, r *http.Request) {
-	responseData := map[string]any{
-		"name":   "",
-		"weight": 0,
-		"height": 0,
-	}
-	userId := r.Context().Value(userIDKey)
+	// userId := r.Context().Value(userIDKey)
+	userId := 1
 	encoder := json.NewEncoder(w)
-	row := db.QueryRow("SELECT name, weight, height FROM users WHERE user_id = ?", userId)
-	var name *string // надо почитать поч именно указатели забыл уже и почему тут не сработают просто переменные
-	var weight *float32
-	var height *int
-	if err := row.Scan(&name, &weight, &height); err != nil {
-		sendResponse(w, http.StatusForbidden, make(map[string]any)) // хз как динамически мапы создавать
-		if err != sql.ErrNoRows {
-			log.Println(err)
-			return
+	switch r.Method {
+	case http.MethodGet:
+		row := db.QueryRow("SELECT name, weight, height FROM users WHERE user_id = ?", userId)
+		var name *string
+		var weight *float32
+		var height *int
+		if err := row.Scan(&name, &weight, &height); err != nil {
+			sendResponse(w, http.StatusForbidden, make(map[string]any)) // хз как динамически мапы создавать
+			if err != sql.ErrNoRows {
+				log.Println(err)
+				return
+			}
 		}
+		encoder.Encode(Profile{Name: *name, Weight: *weight, Height: *height})
+	case http.MethodPut:
+		profile := Profile{}
+		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+		err := decoder.Decode(&profile)
+		if err != nil {
+
+		}
+		db.Exec("UPDATE users SET weight = ?, height = ?", profile.Weight, profile.Height)
+		encoder.Encode(profile)
 	}
-	responseData["name"] = name
-	responseData["weight"] = weight
-	responseData["height"] = height
-	encoder.Encode(responseData)
 }
 
 func createTables() {
@@ -354,7 +365,7 @@ func createTables() {
 
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite", "tracker.db")
+	db, err = sql.Open("sqlite", "tracker.db?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		log.Fatal("Не смог открыть бд: ", err)
 	}
@@ -371,7 +382,8 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("static")))
 	http.HandleFunc("POST /api/training", addTrainingHandler)
 	http.HandleFunc("GET /me", meHandler)
-
+	http.HandleFunc("GET /api/profile", profileHandler)
+	http.HandleFunc("PUT /api/profile", profileHandler)
 	// http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
 	// http.HandleFunc("GET /me", authMiddleware(meHandler))
 

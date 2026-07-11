@@ -79,7 +79,7 @@ export default function ProfilePage({
               <span className="font-display text-[28px] font-800 text-accent">{initial}</span>
             </div>
             <h1 className="mt-3 text-balance text-center font-display text-[20px] font-800 tracking-tight text-ink">{displayName}</h1>
-            <p className="text-[13px] font-500 text-ink-muted">С нами с 2023 года</p>
+            {/* <p className="text-[13px] font-500 text-ink-muted">С нами с 2023 года</p> */}
           </section>
         )}
 

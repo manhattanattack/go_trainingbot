@@ -23,6 +23,7 @@ import {
   muscleGroupVolume,
   progressExerciseIds,
   tonnageProgress,
+  pointWord,
 } from "../lib/format.js"
 
 const TABS = [
@@ -147,7 +148,7 @@ function StrengthSection({ history }) {
         </button>
 
         <section className="overflow-hidden rounded-2xl border border-hairline bg-card" aria-labelledby="strength-chart-title">
-          <ChartHeader eyebrow="История" title="Вес по тренировкам" titleId="strength-chart-title" badge={`${points.length} точек`}>
+          <ChartHeader eyebrow="История" title="Вес по тренировкам" titleId="strength-chart-title" badge={`${points.length} ${pointWord(points.length)}`}>
             <div className="flex flex-wrap gap-4 text-[11px] font-500 text-ink-muted" aria-label="Легенда графика">
               <Legend color="bg-accent" label="Рабочий вес" />
               <Legend color="bg-ink-muted" label="Расчётный 1ПМ" dashed />

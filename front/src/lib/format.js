@@ -72,7 +72,7 @@ export function completedWeekStreak(history, weeklyGoal = 3, now = new Date()) {
 
 export function formatVolume(n) {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}к`
   return `${Math.round(n)}`
 }
 
@@ -93,6 +93,13 @@ function dayWord(number) {
   if (last === 1) return "день"
   if (last >= 2 && last <= 4) return "дня"
   return "дней"
+}
+
+export function pointWord(number) {
+  const last = number % 10
+  if (last === 1) return "точка"
+  if (last >= 2 && last <= 4) return "точки"
+  return "точек"
 }
 
 export function relativeDay(str) {
