@@ -11,9 +11,16 @@ function emptySet() {
   return { weight: "", reps: "", rpe: "", note: "" }
 }
 
-export default function TrainingPage({ history = [], historyLoading = false, onSaved, goToOverview }) {
-  const [date, setDate] = useState(() => toISODate(new Date()))
-  const [exercises, setExercises] = useState([])
+export default function TrainingPage({
+  history = [],
+  historyLoading = false,
+  onSaved,
+  goToOverview,
+  date,
+  setDate,
+  exercises,
+  setExercises,
+}) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [exerciseAddVersion, setExerciseAddVersion] = useState(0)
   const [saving, setSaving] = useState(false)

@@ -6,9 +6,15 @@ import ProfilePage from "./pages/ProfilePage.jsx"
 import ProgressPage from "./pages/ProgressPage.jsx"
 import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
 import { fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
+import { toISODate } from "./lib/format.js"
 
 export default function App() {
   const [tab, setTab] = useState("overview")
+  // Draft (unsaved) workout state lifted to the app root so it survives
+  // switching between bottom-nav tabs for the whole session. Intentionally
+  // in-memory only (no localStorage/sessionStorage) per Telegram Mini App constraints.
+  const [draftDate, setDraftDate] = useState(() => toISODate(new Date()))
+  const [draftExercises, setDraftExercises] = useState([])
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -96,6 +102,10 @@ export default function App() {
             historyLoading={loading}
             onSaved={load}
             goToOverview={() => setTab("overview")}
+            date={draftDate}
+            setDate={setDraftDate}
+            exercises={draftExercises}
+            setExercises={setDraftExercises}
           />
         )}
         {!workoutDetail && tab === "progress" && (
