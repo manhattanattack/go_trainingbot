@@ -26,7 +26,7 @@ export async function syncTelegramUser() {
   const displayName = user.username ? `@${user.username}` : user.first_name;
 
   try {
-    const res = await fetch("/api/profile", { // или твой эндпоинт /me
+    const res = await fetch("/api/profile", { 
       method: "PUT",
       headers: {
         "Authorization": `tma ${WebApp.initData}`,
@@ -50,13 +50,13 @@ export async function syncTelegramUser() {
 
 export async function fetchHistory() {
   try {
-    const res = await fetch("/api/me", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
+    const res = await fetch("/api/getTrainings", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
     if (!res.ok) throw new Error(`Failed to load history (${res.status})`)
     const data = await res.json()
     return Array.isArray(data) ? data : []
   } catch (err) {
     if (import.meta.env.DEV) {
-      console.warn("[Kore] /me unreachable, using sample data:", err.message)
+      console.warn("[Kore] /getTrainings unreachable, using sample data:", err.message)
       return SAMPLE_HISTORY
     }
     throw err

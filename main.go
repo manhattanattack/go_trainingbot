@@ -187,7 +187,7 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func meHandler(w http.ResponseWriter, r *http.Request) {
+func getTrainingsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("me")
 	userId := r.Context().Value(userIDKey)
 	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId) // если нет юзера добавляю его
@@ -380,7 +380,7 @@ func main() {
 	initDB()
 	http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
 	http.HandleFunc("POST /api/training", authMiddleware(http.HandlerFunc(addTrainingHandler)))
-	http.HandleFunc("GET /api/me", authMiddleware(http.HandlerFunc(meHandler)))
+	http.HandleFunc("GET /api/getTrainings", authMiddleware(http.HandlerFunc(getTrainingsHandler)))
 	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
 	http.HandleFunc("PUT /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
 	// http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
