@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Copy, HelpCircle, Plus, Trash2, X } from "lucide-react"
 import ExerciseIcon from "./ExerciseIcon.jsx"
 import { exerciseName, getExercise } from "../lib/exercises.js"
@@ -174,23 +174,32 @@ function SetCard({ set, number, collapsed, canDelete, onExpand, onChange, onDupl
               <HelpCircle size={14} />
             </button>
           </div>
-          <div className="flex snap-x gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {RPE_VALUES.map((value) => {
-              const selected = Number(set.rpe) === value
-              return (
-                <button
-                  type="button"
-                  key={value}
-                  onClick={() => onChange("rpe", String(value))}
-                  aria-pressed={selected}
-                  className={`h-8 min-w-10 snap-start rounded-lg px-2 font-display text-[12px] font-700 transition ${
-                    selected ? "bg-accent text-surface" : "border border-hairline bg-card text-ink-muted active:bg-hairline"
-                  }`}
-                >
-                  {value}
-                </button>
-              )
-            })}
+          <div className="rounded-xl border border-hairline bg-card p-1">
+            <div className="flex items-center justify-between gap-0.5">
+              {RPE_VALUES.map((value) => {
+                const selected = Number(set.rpe) === value
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => onChange("rpe", String(value))}
+                    aria-label={`RPE ${value}`}
+                    aria-pressed={selected}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-display text-[11px] font-700 transition-all ${
+                      selected
+                        ? "bg-accent text-surface shadow-sm ring-2 ring-accent/20"
+                        : "text-ink-muted active:bg-hairline active:text-ink"
+                    }`}
+                  >
+                    {value}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex items-center justify-between px-1 pt-1 text-[9px] font-500 text-ink-faint" aria-hidden="true">
+              <span>Легко</span>
+              <span>Предел</span>
+            </div>
           </div>
         </div>
           </div>
@@ -249,10 +258,21 @@ function RpeHelpSheet({ open, onClose }) {
   )
 }
 
-export default function ExerciseCard({ exercise, index, onUpdate, onRemove }) {
+export default function ExerciseCard({
+  exercise,
+  index,
+  collapseVersion,
+  isLatest,
+  onUpdate,
+  onRemove,
+}) {
   const meta = getExercise(exercise.baseExercise)
   const [rpeHelpOpen, setRpeHelpOpen] = useState(false)
   const [activeSetIndex, setActiveSetIndex] = useState(() => Math.max(0, exercise.sets.length - 1))
+
+  useEffect(() => {
+    if (!isLatest) setActiveSetIndex(-1)
+  }, [collapseVersion])
 
   const updateSet = (setIdx, field, value) => {
     const sets = exercise.sets.map((set, index) =>

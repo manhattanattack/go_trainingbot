@@ -43,7 +43,14 @@ export default function App() {
             onShowAll={() => setTab("profile")}
           />
         )}
-        {tab === "log" && <TrainingPage onSaved={load} goToOverview={() => setTab("overview")} />}
+        {tab === "log" && (
+          <TrainingPage
+            history={history}
+            historyLoading={loading}
+            onSaved={load}
+            goToOverview={() => setTab("overview")}
+          />
+        )}
         {tab === "profile" && (
           <ProfilePage history={history} loading={loading} error={error} onRetry={load} />
         )}
