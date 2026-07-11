@@ -5,7 +5,7 @@ import TrainingPage from "./pages/TrainingPage.jsx"
 import ProfilePage from "./pages/ProfilePage.jsx"
 import ProgressPage from "./pages/ProgressPage.jsx"
 import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
-import { syncTelegramUser, fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
+import { fetchMe, syncTelegramUser, fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 import { toISODate } from "./lib/format.js"
 
 
