@@ -3,6 +3,7 @@ import BottomNav from "./components/BottomNav.jsx"
 import OverviewPage from "./pages/OverviewPage.jsx"
 import TrainingPage from "./pages/TrainingPage.jsx"
 import ProfilePage from "./pages/ProfilePage.jsx"
+import ProgressPage from "./pages/ProgressPage.jsx"
 import { fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 
 export default function App() {
@@ -62,6 +63,9 @@ export default function App() {
             onSaved={load}
             goToOverview={() => setTab("overview")}
           />
+        )}
+        {tab === "progress" && (
+          <ProgressPage history={history} loading={loading} error={error} onRetry={load} />
         )}
         {tab === "profile" && (
           <ProfilePage

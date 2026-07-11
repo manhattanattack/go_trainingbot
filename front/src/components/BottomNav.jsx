@@ -1,9 +1,10 @@
-import { LayoutGrid, Dumbbell, User } from "lucide-react"
+import { ChartNoAxesCombined, LayoutGrid, Dumbbell, User } from "lucide-react"
 import { cn } from "../lib/format.js"
 
 const TABS = [
   { id: "overview", label: "Обзор", icon: LayoutGrid },
   { id: "log", label: "Дневник", icon: Dumbbell },
+  { id: "progress", label: "Прогресс", icon: ChartNoAxesCombined },
   { id: "profile", label: "Профиль", icon: User },
 ]
 

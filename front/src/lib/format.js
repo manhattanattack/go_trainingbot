@@ -1,3 +1,5 @@
+import { getExercise } from "./exercises.js"
+
 export function cn(...args) {
   return args.filter(Boolean).join(" ")
 }
@@ -118,4 +120,105 @@ export function trainingSetCount(training) {
   let count = 0
   for (const ex of training.exercises || []) count += (ex.sets || []).length
   return count
+}
+
+export function formatWeight(value) {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value || 0)
+}
+
+export function progressExerciseIds(history, minimumSets = 2) {
+  const totals = new Map()
+  const recentOrder = []
+
+  for (const training of history) {
+    for (const exercise of training.exercises || []) {
+      const id = Number(exercise.baseExercise)
+      if (!recentOrder.includes(id)) recentOrder.push(id)
+      totals.set(id, (totals.get(id) || 0) + (exercise.sets || []).length)
+    }
+  }
+
+  return recentOrder.filter((id) => (totals.get(id) || 0) >= minimumSets)
+}
+
+export function exerciseProgress(history, exerciseId) {
+  return history
+    .map((training) => {
+      const sets = (training.exercises || [])
+        .filter((exercise) => Number(exercise.baseExercise) === Number(exerciseId))
+        .flatMap((exercise) => exercise.sets || [])
+        .filter((set) => Number(set.weight) >= 0 && Number(set.reps) > 0)
+
+      if (!sets.length) return null
+      const maxWeight = Math.max(...sets.map((set) => Number(set.weight) || 0))
+      const estimatedOneRepMax = Math.max(
+        ...sets.map((set) => (Number(set.weight) || 0) * (1 + (Number(set.reps) || 0) / 30)),
+      )
+
+      return {
+        date: training.date,
+        shortDate: new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(parseDate(training.date)),
+        maxWeight: Number(maxWeight.toFixed(1)),
+        estimatedOneRepMax: Number(estimatedOneRepMax.toFixed(1)),
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => parseDate(a.date) - parseDate(b.date))
+}
+
+export function monthlyProgress(points) {
+  if (points.length < 2) return null
+  const latest = points.at(-1)
+  const cutoff = parseDate(latest.date)
+  cutoff.setDate(cutoff.getDate() - 30)
+  const baseline = [...points].reverse().find((point) => parseDate(point.date) <= cutoff)
+
+  if (!baseline) return null
+  const change = latest.maxWeight - baseline.maxWeight
+  return {
+    change: Number(change.toFixed(1)),
+    percent: baseline.maxWeight ? Number(((change / baseline.maxWeight) * 100).toFixed(1)) : null,
+  }
+}
+
+export function muscleGroupVolume(history, muscleGroups, period = "week", now = new Date()) {
+  const end = startOfDay(now)
+  const start = period === "week" ? startOfWeek(end) : new Date(end)
+  const periodDays = period === "week" ? 7 : period === "month" ? 30 : 90
+  if (period !== "week") start.setDate(start.getDate() - periodDays + 1)
+
+  const exerciseGroups = new Map()
+  const groupIds = new Set(muscleGroups.map((group) => group.id))
+  const totals = new Map(muscleGroups.map((group) => [group.id, { volume: 0, trainings: new Set() }]))
+
+  for (const training of history) {
+    const date = parseDate(training.date)
+    if (!date || date < start || date > end) continue
+
+    for (const exercise of training.exercises || []) {
+      const exerciseId = Number(exercise.baseExercise)
+      let muscleGroup = exerciseGroups.get(exerciseId)
+      if (!muscleGroup) {
+        muscleGroup = getExercise(exerciseId).muscleGroup
+        exerciseGroups.set(exerciseId, muscleGroup)
+      }
+      if (!groupIds.has(muscleGroup)) continue
+
+      const volume = (exercise.sets || []).reduce(
+        (sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0),
+        0,
+      )
+      totals.get(muscleGroup).volume += volume
+      if ((exercise.sets || []).length > 0) {
+        totals.get(muscleGroup).trainings.add(training.id ?? training.date)
+      }
+    }
+  }
+
+  const weeks = period === "week" ? 1 : periodDays / 7
+  return muscleGroups.map((group) => ({
+    ...group,
+    volume: Number(totals.get(group.id).volume.toFixed(1)),
+    frequency: Number((totals.get(group.id).trainings.size / weeks).toFixed(1)),
+  }))
 }

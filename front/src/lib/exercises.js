@@ -1,3 +1,13 @@
+// Stable order shared by analytics and exercise metadata.
+export const MUSCLE_GROUPS = [
+  { id: "chest", label: "Грудь", shortLabel: "Грудь" },
+  { id: "back", label: "Спина", shortLabel: "Спина" },
+  { id: "legs", label: "Ноги", shortLabel: "Ноги" },
+  { id: "shoulders", label: "Плечи", shortLabel: "Плечи" },
+  { id: "arms", label: "Руки", shortLabel: "Руки" },
+  { id: "abs", label: "Пресс", shortLabel: "Пресс" },
+]
+
 // Static exercise dictionary. `id` maps to `baseExercise` in the API payloads.
 export const EXERCISES = [
   { id: 1, name: "Жим штанги лёжа", group: "Грудь", muscleGroup: "chest", equipment: "barbell" },
