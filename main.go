@@ -286,6 +286,11 @@ type Profile struct {
 func profileHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("profile")
 	userId := r.Context().Value(userIDKey)
+	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	encoder := json.NewEncoder(w)
 	switch r.Method {
 	case http.MethodGet:
@@ -378,7 +383,7 @@ func initDB() {
 func main() {
 	godotenv.Load()
 	initDB()
-	http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
+	// http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
 	http.HandleFunc("POST /api/training", authMiddleware(http.HandlerFunc(addTrainingHandler)))
 	http.HandleFunc("GET /api/getTrainings", authMiddleware(http.HandlerFunc(getTrainingsHandler)))
 	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
