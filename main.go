@@ -284,10 +284,14 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	var name any
-	json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&name)
+	var data map[any]any
+	json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&data)
+	name := data["name"]
 	fmt.Println(name)
 	_, err = db.Exec("UPDATE users SET name = ? WHERE user_id = ?", name, userId)
+	if err != nil {
+		log.Println(err)
+	}
 	json.NewEncoder(w).Encode(map[string]any{"user_id": userId, "name": name})
 }
 
