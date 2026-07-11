@@ -156,7 +156,6 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 // TODO: валидация json: чтобы нельзя было отправить 999 повторений и тд.
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Получил запрос")
 	responseData := map[string]any{
 		"status": "ok",
 	}
@@ -189,8 +188,7 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
-	userId := 1
-	// userId := r.Context().Value(userIDKey)
+	userId := r.Context().Value(userIDKey)
 	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId) // если нет юзера добавляю его
 	if err != nil {
 		log.Println(err)
@@ -285,8 +283,7 @@ type Profile struct {
 }
 
 func profileHandler(w http.ResponseWriter, r *http.Request) {
-	// userId := r.Context().Value(userIDKey)
-	userId := 1
+	userId := r.Context().Value(userIDKey)
 	encoder := json.NewEncoder(w)
 	switch r.Method {
 	case http.MethodGet:
@@ -295,7 +292,7 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 		var weight *float32
 		var height *int
 		if err := row.Scan(&name, &weight, &height); err != nil {
-			sendResponse(w, http.StatusForbidden, make(map[string]any)) // хз как динамически мапы создавать
+			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't fetch profile data"})
 			if err != sql.ErrNoRows {
 				log.Println(err)
 				return
@@ -307,7 +304,7 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 		err := decoder.Decode(&profile)
 		if err != nil {
-
+			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't decode profile data"})
 		}
 		db.Exec("UPDATE users SET weight = ?, height = ?", profile.Weight, profile.Height)
 		encoder.Encode(profile)
@@ -380,10 +377,10 @@ func main() {
 	godotenv.Load()
 	initDB()
 	http.Handle("/", http.FileServer(http.Dir("static")))
-	http.HandleFunc("POST /api/training", addTrainingHandler)
-	http.HandleFunc("GET /me", meHandler)
-	http.HandleFunc("GET /api/profile", profileHandler)
-	http.HandleFunc("PUT /api/profile", profileHandler)
+	http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
+	http.HandleFunc("GET /me", authMiddleware(meHandler))
+	http.HandleFunc("GET /api/profile", authMiddleware(profileHandler))
+	http.HandleFunc("PUT /api/profile", authMiddleware(profileHandler))
 	// http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
 	// http.HandleFunc("GET /me", authMiddleware(meHandler))
 
