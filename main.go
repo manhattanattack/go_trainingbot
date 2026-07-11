@@ -64,17 +64,12 @@ func validateAndGetUserId(rawInitData string) (int64, error) {
 
 }
 
-// посмотреть мб добавить insert or ignore
 func insertTrainingData(ctx context.Context, trainingData TrainingData) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	// _, err = tx.ExecContext(ctx, "INSERT INTO users (user_id) VALUES (?)", 1)
-	// if err != nil {
-	// 	return err
-	// }
 	result, err := tx.ExecContext(ctx, "INSERT INTO trainings (user_id, date) VALUES (?, ?)", ctx.Value(userIDKey), trainingData.Date)
 	if err != nil {
 		return err
@@ -154,7 +149,6 @@ func authMiddleware(next http.Handler) http.HandlerFunc {
 	}
 }
 
-// TODO: валидация json: чтобы нельзя было отправить 999 повторений и тд.
 func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	responseData := map[string]any{
 		"status": "ok",
@@ -166,7 +160,6 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&trainingData)
 	if err != nil {
-		// todo: добавить в ответ точную ошибку (в любом случае понадобится на фронте), в том числе maxbyteserror
 		log.Println(err)
 		responseData["status"] = "failed to decode"
 		sendResponse(w, http.StatusBadRequest, responseData)
@@ -185,6 +178,26 @@ func addTrainingHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("Не смог записать в json %v\n", err)
 	}
+}
+
+func deleteTrainingHandler(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		TrainingId int `json:"training_id"`
+	}
+
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)) // читает не больше мегабайта хз работает или нет
+
+	err := decoder.Decode(&data)
+	if err != nil {
+		log.Println(err)
+		sendResponse(w, http.StatusBadRequest, map[string]any{"error": "failed to decode"})
+		return
+	}
+	_, err = db.Exec("DELETE FROM trainings WHERE training_id = ?", data.TrainingId)
+	if err != nil {
+		log.Println(err)
+	}
+	sendResponse(w, 200, map[string]any{"status": "ok"})
 }
 
 func getTrainingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -397,6 +410,7 @@ func main() {
 	// http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
 	http.HandleFunc("PUT /api/me", authMiddleware(http.HandlerFunc(meHandler)))
 	http.HandleFunc("POST /api/training", authMiddleware(http.HandlerFunc(addTrainingHandler)))
+	http.HandleFunc("DELETE /api/training", authMiddleware(http.HandlerFunc(deleteTrainingHandler)))
 	http.HandleFunc("GET /api/getTrainings", authMiddleware(http.HandlerFunc(getTrainingsHandler)))
 	http.HandleFunc("UPDATE /api/profile/updateMetrics", authMiddleware(http.HandlerFunc(profileUpdateMetricsHandler)))
 	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(getProfileHandler)))

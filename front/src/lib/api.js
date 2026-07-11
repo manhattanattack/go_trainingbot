@@ -111,3 +111,14 @@ export async function saveTraining(payload) {
   const text = await res.text()
   return text ? JSON.parse(text) : null
 }
+
+export async function deleteTraining(payload) {
+  const res = await fetch("/api/training", {
+    method: "DELETE",
+    headers: { 'Authorization': `tma ${getInitData()}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(`Failed to delete workout (${res.status})`)
+  const text = await res.text()
+  return text ? JSON.parse(text) : null
+}
