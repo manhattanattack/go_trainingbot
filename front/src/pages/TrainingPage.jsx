@@ -58,20 +58,20 @@ export default function TrainingPage({ onSaved, goToOverview }) {
 
   const handleSave = async () => {
     if (exercises.length === 0) {
-      setStatus({ type: "error", message: "Add at least one exercise first." })
+      setStatus({ type: "error", message: "Сначала добавьте хотя бы одно упражнение." })
       return
     }
     setSaving(true)
     setStatus(null)
     try {
       await saveTraining(buildPayload())
-      setStatus({ type: "success", message: "Workout saved." })
+      setStatus({ type: "success", message: "Тренировка сохранена." })
       setExercises([])
       setDate(toISODate(new Date()))
       onSaved?.()
       setTimeout(() => goToOverview?.(), 700)
     } catch (err) {
-      setStatus({ type: "error", message: err.message || "Could not save workout." })
+      setStatus({ type: "error", message: err.message || "Не удалось сохранить тренировку." })
     } finally {
       setSaving(false)
     }
@@ -79,7 +79,7 @@ export default function TrainingPage({ onSaved, goToOverview }) {
 
   return (
     <>
-      <TopBar title="Log Workout" />
+      <TopBar title="Запись тренировки" />
 
       <div className="space-y-4 pt-4">
         {/* Date picker */}
@@ -87,7 +87,7 @@ export default function TrainingPage({ onSaved, goToOverview }) {
           <label className="flex items-center justify-between rounded-2xl border border-hairline bg-card px-4 py-3">
             <span className="flex items-center gap-2.5 text-[15px] font-500 text-ink">
               <Calendar size={18} className="text-accent" />
-              Date
+              Дата
             </span>
             <input
               type="date"
@@ -101,9 +101,9 @@ export default function TrainingPage({ onSaved, goToOverview }) {
         {/* Session summary */}
         {exercises.length > 0 && (
           <section className="grid grid-cols-3 gap-3 px-4">
-            <Summary label="Exercises" value={exercises.length} />
-            <Summary label="Sets" value={totalSets} />
-            <Summary label="Volume" value={`${formatVolume(totalVolume)}`} unit="kg" />
+            <Summary label="Упражнения" value={exercises.length} />
+            <Summary label="Подходы" value={totalSets} />
+            <Summary label="Объём" value={`${formatVolume(totalVolume)}`} unit="кг" />
           </section>
         )}
 
@@ -114,8 +114,8 @@ export default function TrainingPage({ onSaved, goToOverview }) {
               <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft text-accent">
                 <ClipboardList size={22} />
               </span>
-              <p className="font-display text-[15px] font-600 text-ink">Empty session</p>
-              <p className="mt-1 text-[13px] text-ink-muted">Add an exercise to start logging sets.</p>
+              <p className="font-display text-[15px] font-600 text-ink">Тренировка пока пуста</p>
+              <p className="mt-1 text-[13px] text-ink-muted">Добавьте упражнение, чтобы записать подходы.</p>
             </div>
           ) : (
             exercises.map((ex, i) => (
@@ -134,7 +134,7 @@ export default function TrainingPage({ onSaved, goToOverview }) {
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-hairline bg-card py-3.5 font-display text-[15px] font-600 text-ink transition-colors active:bg-card-2"
           >
             <Plus size={18} strokeWidth={2.5} className="text-accent" />
-            Add Exercise
+            Добавить упражнение
           </button>
         </div>
 
@@ -168,12 +168,12 @@ export default function TrainingPage({ onSaved, goToOverview }) {
           {saving ? (
             <>
               <Loader2 size={19} className="animate-spin" />
-              Saving...
+              Сохранение...
             </>
           ) : (
             <>
               <Check size={19} strokeWidth={2.5} />
-              Save Workout
+              Сохранить тренировку
             </>
           )}
         </button>

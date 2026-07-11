@@ -24,7 +24,21 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
   )
   const recentTrainingCount = useMemo(() => countTrainingsInLastDays(history, 15), [history])
   const weekStreak = useMemo(() => completedWeekStreak(history, 3), [history])
-  const shouldGlow = !workoutDates.has(toISODate(new Date()))
+  const shouldGlow = useMemo(() => {
+    if (loading) return false
+
+    const now = new Date()
+    const trainedToday = workoutDates.has(toISODate(now))
+    const lastWorkoutDate = history
+      .map((training) => parseDate(training.date))
+      .filter(Boolean)
+      .sort((a, b) => b.getTime() - a.getTime())[0]
+    const inactiveForTooLong = lastWorkoutDate
+      ? daysBetween(now, lastWorkoutDate) >= INACTIVITY_THRESHOLD_DAYS
+      : true
+
+    return !trainedToday || inactiveForTooLong
+  }, [history, loading, workoutDates])
 
   const { weeklyVolume, weeklyCount } = useMemo(() => {
     const now = new Date()
@@ -91,15 +105,7 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
         </section>
 
         {/* Start workout */}
-        <div className="px-4">
-          <button
-            onClick={onStart}
-            className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 transition-transform active:scale-[0.98] ${shouldGlow ? "workout-cta-glow" : ""}`}
-          >
-            <Play size={19} fill="currentColor" strokeWidth={0} />
-            Начать тренировку
-          </button>
-        </div>
+        <StartWorkoutButton onStart={onStart} shouldGlow={shouldGlow} />
 
         {/* Recent */}
         <div>
@@ -152,6 +158,21 @@ function trainingLabel(number) {
 
 function weekLabel(number) {
   return russianPlural(number, ["неделя", "недели", "недель"])
+}
+
+function StartWorkoutButton({ onStart, shouldGlow }) {
+  return (
+    <div className="px-4">
+      <button
+        type="button"
+        onClick={onStart}
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 transition-transform active:scale-[0.98] ${shouldGlow ? "workout-cta-glow" : ""}`}
+      >
+        <Play size={19} fill="currentColor" strokeWidth={0} />
+        Начать тренировку
+      </button>
+    </div>
+  )
 }
 
 function StatCard({ icon: Icon, label, value, unit }) {

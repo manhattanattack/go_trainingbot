@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Search, X, Plus } from "lucide-react"
+import ExerciseIcon from "./ExerciseIcon.jsx"
 import { EXERCISES } from "../lib/exercises.js"
 
 export default function ExercisePicker({ open, onClose, onSelect }) {
@@ -30,9 +31,9 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Add exercise">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Добавить упражнение">
       <button
-        aria-label="Close"
+        aria-label="Закрыть"
         onClick={onClose}
         className="animate-fade absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
@@ -41,11 +42,11 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
           <span className="h-1.5 w-10 rounded-full bg-hairline-strong" />
         </div>
         <div className="flex items-center justify-between px-5 pb-3 pt-3">
-          <h2 className="font-display text-lg font-700 text-ink">Add Exercise</h2>
+          <h2 className="font-display text-lg font-700 text-ink">Добавить упражнение</h2>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-ink-muted active:bg-card-2"
-            aria-label="Close"
+            aria-label="Закрыть"
           >
             <X size={18} />
           </button>
@@ -58,11 +59,11 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search exercises"
+              placeholder="Поиск упражнений"
               className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-faint"
             />
             {query && (
-              <button onClick={() => setQuery("")} aria-label="Clear search" className="text-ink-faint">
+              <button onClick={() => setQuery("")} aria-label="Очистить поиск" className="text-ink-faint">
                 <X size={16} />
               </button>
             )}
@@ -71,7 +72,7 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
 
         <div className="no-scrollbar flex-1 overflow-y-auto px-4 pb-8">
           {groups.length === 0 && (
-            <p className="mt-10 text-center text-sm text-ink-faint">No exercises found.</p>
+            <p className="mt-10 text-center text-sm text-ink-faint">Упражнения не найдены.</p>
           )}
           {groups.map(([group, items]) => (
             <div key={group} className="mb-4">
@@ -84,8 +85,11 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
                       onClick={() => onSelect(ex.id)}
                       className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors active:bg-card-2"
                     >
-                      <span className="text-[15px] font-500 text-ink">{ex.name}</span>
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-accent">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <ExerciseIcon muscleGroup={ex.muscleGroup} equipment={ex.equipment} size={18} />
+                        <span className="truncate text-[15px] font-500 text-ink">{ex.name}</span>
+                      </span>
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
                         <Plus size={16} strokeWidth={2.5} />
                       </span>
                     </button>

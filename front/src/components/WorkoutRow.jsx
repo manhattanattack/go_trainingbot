@@ -1,10 +1,12 @@
-import { ChevronRight, Dumbbell } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { InsetRow } from "./InsetList.jsx"
-import { exerciseName } from "../lib/exercises.js"
+import ExerciseIcon from "./ExerciseIcon.jsx"
+import { exerciseName, getExercise } from "../lib/exercises.js"
 import { relativeDay, trainingVolume, trainingSetCount, formatVolume } from "../lib/format.js"
 
 export default function WorkoutRow({ training, compact = false }) {
   const names = (training.exercises || []).map((e) => exerciseName(e.baseExercise))
+  const primaryExercise = getExercise(training.exercises?.[0]?.baseExercise)
   const preview = names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "")
   const sets = trainingSetCount(training)
   const volume = trainingVolume(training)
@@ -13,9 +15,11 @@ export default function WorkoutRow({ training, compact = false }) {
 
   return (
     <InsetRow className={compact ? "py-2.5" : undefined}>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-        <Dumbbell size={18} />
-      </span>
+      <ExerciseIcon
+        muscleGroup={primaryExercise.muscleGroup}
+        equipment={primaryExercise.equipment}
+        size={20}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="font-display text-[15px] font-600 text-ink">{relativeDay(training.date)}</span>
