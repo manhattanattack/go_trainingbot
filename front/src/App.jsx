@@ -7,7 +7,6 @@ import ProgressPage from "./pages/ProgressPage.jsx"
 import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
 import { fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 import { toISODate } from "./lib/format.js"
-import WebApp from '@twa-dev/sdk';
 
 
 export default function App() {
@@ -51,6 +50,13 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    try {
+    import("@twa-dev/sdk").then((module) => {
+      module.default.ready();
+    });
+    } catch (e) {
+      console.error("TMA init failed", e);
+    }
     load()
     fetchProfile()
       .then(setProfile)
