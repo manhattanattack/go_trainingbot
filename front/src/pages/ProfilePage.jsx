@@ -59,7 +59,7 @@ export default function ProfilePage({
   }, [exerciseId, history, period])
 
   const selectedExercise = EXERCISES.find((exercise) => exercise.id === exerciseId)
-  const displayName = profile.name?.trim() || "Алекс Картер"
+  const displayName = profile.name?.trim() || "???"
   const initial = displayName.slice(0, 1).toUpperCase()
 
   return (

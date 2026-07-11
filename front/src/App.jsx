@@ -51,7 +51,7 @@ export default function App() {
     load()
     fetchProfile()
       .then(setProfile)
-      .catch(() => setProfile({ name: "Алекс Картер", height: 0, weight: 0 }))
+      .catch(() => setProfile({ name: "???", height: 0, weight: 0 }))
       .finally(() => setProfileLoading(false))
   }, [load])
 

@@ -22,7 +22,7 @@ export async function fetchHistory() {
   }
 }
 
-const SAMPLE_PROFILE = { name: "Алекс Картер", height: 180, weight: 78 }
+const SAMPLE_PROFILE = { name: "???", height: 0, weight: 0 }
 
 export async function fetchProfile() {
   try {
