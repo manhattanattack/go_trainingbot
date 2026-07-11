@@ -20,7 +20,7 @@ export default function App() {
       data.sort((a, b) => (a.date < b.date ? 1 : -1))
       setHistory(data)
     } catch (err) {
-      setError(err.message || "Could not reach the server")
+      setError(err.message || "Не удалось связаться с сервером")
     } finally {
       setLoading(false)
     }
@@ -40,6 +40,7 @@ export default function App() {
             error={error}
             onRetry={load}
             onStart={() => setTab("log")}
+            onShowAll={() => setTab("profile")}
           />
         )}
         {tab === "log" && <TrainingPage onSaved={load} goToOverview={() => setTab("overview")} />}

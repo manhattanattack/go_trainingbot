@@ -2,9 +2,9 @@ import { LayoutGrid, Dumbbell, User } from "lucide-react"
 import { cn } from "../lib/format.js"
 
 const TABS = [
-  { id: "overview", label: "Overview", icon: LayoutGrid },
-  { id: "log", label: "Log", icon: Dumbbell },
-  { id: "profile", label: "Profile", icon: User },
+  { id: "overview", label: "Обзор", icon: LayoutGrid },
+  { id: "log", label: "Дневник", icon: Dumbbell },
+  { id: "profile", label: "Профиль", icon: User },
 ]
 
 export default function BottomNav({ active, onChange }) {

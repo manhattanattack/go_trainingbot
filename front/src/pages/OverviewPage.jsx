@@ -4,10 +4,27 @@ import TopBar from "../components/TopBar.jsx"
 import CalendarStrip from "../components/CalendarStrip.jsx"
 import WorkoutRow from "../components/WorkoutRow.jsx"
 import { InsetGroup } from "../components/InsetList.jsx"
-import { trainingVolume, formatVolume, parseDate, daysBetween, formatFullDate } from "../lib/format.js"
+import {
+  trainingVolume,
+  formatVolume,
+  parseDate,
+  daysBetween,
+  formatFullDate,
+  toISODate,
+  countTrainingsInLastDays,
+  completedWeekStreak,
+} from "../lib/format.js"
 
-export default function OverviewPage({ history, loading, error, onRetry, onStart }) {
-  const workoutDates = useMemo(() => new Set(history.map((t) => t.date)), [history])
+const INACTIVITY_THRESHOLD_DAYS = 2
+
+export default function OverviewPage({ history, loading, error, onRetry, onStart, onShowAll }) {
+  const workoutDates = useMemo(
+    () => new Set(history.map((training) => parseDate(training.date)).filter(Boolean).map(toISODate)),
+    [history],
+  )
+  const recentTrainingCount = useMemo(() => countTrainingsInLastDays(history, 15), [history])
+  const weekStreak = useMemo(() => completedWeekStreak(history, 3), [history])
+  const shouldGlow = !workoutDates.has(toISODate(new Date()))
 
   const { weeklyVolume, weeklyCount } = useMemo(() => {
     const now = new Date()
@@ -23,7 +40,7 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
     return { weeklyVolume: vol, weeklyCount: count }
   }, [history])
 
-  const recent = history.slice(0, 5)
+  const recent = history.slice(0, 3)
   const today = formatFullDate(new Date().toISOString().slice(0, 10))
 
   return (
@@ -33,20 +50,27 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
         <div className="px-4">
           <p className="text-[13px] font-500 text-ink-faint">{today}</p>
           <h1 className="mt-0.5 font-display text-[26px] font-800 leading-tight tracking-tight text-ink text-balance">
-            Ready to train?
+            Пора на тренировку?
           </h1>
         </div>
 
         {/* Calendar */}
         <section className="px-4">
           <div className="rounded-2xl border border-hairline bg-card p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[13px] font-600 uppercase tracking-wide text-ink-faint">Last 15 days</h2>
-              <span className="text-[13px] font-500 text-ink-muted">
-                {workoutDates.size} {workoutDates.size === 1 ? "session" : "sessions"}
-              </span>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-[13px] font-600 uppercase tracking-wide text-ink-faint">Последние 15 дней</h2>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
+                <span className="text-[13px] font-600 text-ink">
+                  Серия: {weekStreak} {weekLabel(weekStreak)}
+                </span>
+                <span className="text-[12px] font-500 text-ink-muted">
+                  {recentTrainingCount} {trainingLabel(recentTrainingCount)}
+                </span>
+              </div>
             </div>
-            <CalendarStrip workoutDates={workoutDates} />
+            <CalendarStrip workoutDates={workoutDates} history={history} days={15} />
           </div>
         </section>
 
@@ -54,15 +78,15 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
         <section className="grid grid-cols-2 gap-3 px-4">
           <StatCard
             icon={TrendingUp}
-            label="Weekly Volume"
+            label="Объём за неделю"
             value={`${formatVolume(weeklyVolume)}`}
-            unit="kg"
+            unit="кг"
           />
           <StatCard
             icon={Flame}
-            label="This Week"
+            label="На этой неделе"
             value={`${weeklyCount}`}
-            unit={weeklyCount === 1 ? "workout" : "workouts"}
+            unit={trainingLabel(weeklyCount)}
           />
         </section>
 
@@ -70,17 +94,17 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
         <div className="px-4">
           <button
             onClick={onStart}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 transition-transform active:scale-[0.98]"
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 font-display text-[16px] font-700 text-surface shadow-lg shadow-accent/20 transition-transform active:scale-[0.98] ${shouldGlow ? "workout-cta-glow" : ""}`}
           >
             <Play size={19} fill="currentColor" strokeWidth={0} />
-            Start Workout
+            Начать тренировку
           </button>
         </div>
 
         {/* Recent */}
         <div>
           <div className="flex items-center justify-between px-6 pb-2">
-            <h2 className="font-display text-[17px] font-700 text-ink">Recent Workouts</h2>
+            <h2 className="font-display text-[17px] font-700 text-ink">Недавние тренировки</h2>
           </div>
 
           {loading ? (
@@ -90,16 +114,44 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
           ) : recent.length === 0 ? (
             <EmptyState />
           ) : (
-            <InsetGroup>
-              {recent.map((t) => (
-                <WorkoutRow key={t.trainingId} training={t} />
-              ))}
-            </InsetGroup>
+            <div className="flex flex-col gap-3">
+              <InsetGroup>
+                {recent.map((t) => (
+                  <WorkoutRow key={t.trainingId} training={t} compact />
+                ))}
+              </InsetGroup>
+              <div className="px-4">
+                <button
+                  type="button"
+                  onClick={onShowAll}
+                  className="w-full rounded-xl py-2.5 text-[14px] font-600 text-accent transition-colors active:bg-accent-soft"
+                >
+                  Показать всё
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
     </>
   )
+}
+
+function russianPlural(number, forms) {
+  const lastTwo = number % 100
+  const last = number % 10
+  if (lastTwo >= 11 && lastTwo <= 14) return forms[2]
+  if (last === 1) return forms[0]
+  if (last >= 2 && last <= 4) return forms[1]
+  return forms[2]
+}
+
+function trainingLabel(number) {
+  return russianPlural(number, ["тренировка", "тренировки", "тренировок"])
+}
+
+function weekLabel(number) {
+  return russianPlural(number, ["неделя", "недели", "недель"])
 }
 
 function StatCard({ icon: Icon, label, value, unit }) {
@@ -139,8 +191,8 @@ function EmptyState() {
   return (
     <div className="px-4">
       <div className="rounded-2xl border border-dashed border-hairline-strong bg-card/40 px-6 py-10 text-center">
-        <p className="font-display text-[15px] font-600 text-ink">No workouts yet</p>
-        <p className="mt-1 text-[13px] text-ink-muted">Tap Start Workout to log your first session.</p>
+        <p className="font-display text-[15px] font-600 text-ink">Тренировок пока нет</p>
+        <p className="mt-1 text-[13px] text-ink-muted">Нажмите «Начать тренировку», чтобы добавить первую запись.</p>
       </div>
     </div>
   )
@@ -156,7 +208,7 @@ function ErrorState({ message, onRetry }) {
           onClick={onRetry}
           className="mt-3 rounded-full bg-card-2 px-4 py-2 text-[13px] font-600 text-ink active:bg-hairline-strong"
         >
-          Try again
+          Повторить
         </button>
       </div>
     </div>
