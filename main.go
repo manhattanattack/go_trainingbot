@@ -311,7 +311,11 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't decode profile data"})
 		}
-		db.Exec("UPDATE users SET name = ?, weight = ?, height = ? WHERE user_id = ?", profile.Name, profile.Weight, profile.Height, userId)
+		_, err = db.Exec("UPDATE users SET name = ?, weight = ?, height = ? WHERE user_id = ?", profile.Name, profile.Weight, profile.Height, userId)
+		if err != nil {
+			sendResponse(w, http.StatusForbidden, map[string]any{"error": "couldn't update profile data"})
+			log.Println(err)
+		}
 		encoder.Encode(profile)
 	}
 }
