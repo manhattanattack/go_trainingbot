@@ -279,7 +279,7 @@ type Profile struct {
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(userIDKey)
-	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id, weight, height) VALUES (?, 0, 0)", userId)
+	_, err := db.Exec("INSERT OR IGNORE INTO users (user_id) VALUES (?)", userId)
 	if err != nil {
 		log.Println(err)
 		return
