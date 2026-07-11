@@ -5,7 +5,7 @@ import TrainingPage from "./pages/TrainingPage.jsx"
 import ProfilePage from "./pages/ProfilePage.jsx"
 import ProgressPage from "./pages/ProgressPage.jsx"
 import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
-import { fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
+import { syncTelegramUser, fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 import { toISODate } from "./lib/format.js"
 
 
@@ -58,6 +58,23 @@ export default function App() {
       console.error("TMA init failed", e);
     }
     load()
+    async function initProfile() {
+      setProfileLoading(true)
+      try {
+        // Сначала молча шлем PUT-запрос с ником и ID из телеги
+        await syncTelegramUser()
+        // Сразу после этого запрашиваем обновленный профиль из базы
+        const data = await fetchProfile()
+        setProfile(data)
+      } catch (err) {
+        console.warn("Ошибка инициализации профиля:", err)
+        setProfile({ name: "???", height: 0, weight: 0 })
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+
+    initProfile()
     fetchProfile()
       .then(setProfile)
       .catch(() => setProfile({ name: "???", height: 0, weight: 0 }))

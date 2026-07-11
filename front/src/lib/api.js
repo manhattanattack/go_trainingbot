@@ -16,6 +16,38 @@ function getInitData() {
   }
 }
 
+export async function syncTelegramUser() {
+  const user = WebApp.initDataUnsafe?.user;
+  
+  // Если по какой-то причине открыли не в телеге (или данные еще не подтянулись)
+  if (!user) return null;
+
+  // Формируем имя: берем username, если нет — берем first_name
+  const displayName = user.username ? `@${user.username}` : user.first_name;
+
+  try {
+    const res = await fetch("/api/profile", { // или твой эндпоинт /me
+      method: "PUT",
+      headers: {
+        "Authorization": `tma ${WebApp.initData}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        name: displayName,
+        weight: 0,
+        height: 0,
+      })
+    });
+
+    if (!res.ok) throw new Error("Ошибка синхронизации профиля");
+    return await res.json();
+  } catch (err) {
+    console.warn("[Kore] Фоновая синхронизация не удалась:", err.message);
+    return null;
+  }
+}
+
 export async function fetchHistory() {
   try {
     const res = await fetch("/api/me", { headers: { 'Authorization': `tma ${getInitData()}`, Accept: "application/json" } })
