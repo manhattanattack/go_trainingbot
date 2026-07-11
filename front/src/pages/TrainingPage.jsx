@@ -4,7 +4,7 @@ import TopBar from "../components/TopBar.jsx"
 import ExerciseCard from "../components/ExerciseCard.jsx"
 import ExercisePicker from "../components/ExercisePicker.jsx"
 import { saveTraining } from "../lib/api.js"
-import { toISODate, formatVolume, parseDate, relativeDay } from "../lib/format.js"
+import { toISODate, formatVolume, parseDate, relativeDay, previousExerciseBest } from "../lib/format.js"
 import { exerciseName } from "../lib/exercises.js"
 
 function emptySet() {
@@ -183,6 +183,7 @@ export default function TrainingPage({ history = [], historyLoading = false, onS
                 index={i}
                 collapseVersion={exerciseAddVersion}
                 isLatest={i === exercises.length - 1}
+                previousBest={previousExerciseBest(history, ex.baseExercise, date)}
                 onUpdate={(next) => updateExercise(i, next)}
                 onRemove={() => removeExercise(i)}
               />

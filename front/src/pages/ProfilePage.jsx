@@ -32,6 +32,7 @@ export default function ProfilePage({
   profile,
   profileLoading,
   onSaveProfile,
+  onOpenWorkout,
 }) {
   const [period, setPeriod] = useState("all")
   const [exerciseId, setExerciseId] = useState(null)
@@ -192,7 +193,7 @@ export default function ProfilePage({
           ) : (
             <InsetGroup>
               {filteredHistory.map((training) => (
-                <WorkoutRow key={training.trainingId} training={training} />
+                <WorkoutRow key={training.trainingId} training={training} onClick={() => onOpenWorkout?.(training)} />
               ))}
             </InsetGroup>
           )}

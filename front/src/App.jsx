@@ -4,6 +4,7 @@ import OverviewPage from "./pages/OverviewPage.jsx"
 import TrainingPage from "./pages/TrainingPage.jsx"
 import ProfilePage from "./pages/ProfilePage.jsx"
 import ProgressPage from "./pages/ProgressPage.jsx"
+import WorkoutDetailPage from "./pages/WorkoutDetailPage.jsx"
 import { fetchHistory, fetchProfile, updateProfile } from "./lib/api.js"
 
 export default function App() {
@@ -13,6 +14,16 @@ export default function App() {
   const [error, setError] = useState(null)
   const [profile, setProfile] = useState({ name: "", height: 0, weight: 0 })
   const [profileLoading, setProfileLoading] = useState(true)
+  const [workoutDetail, setWorkoutDetail] = useState(null)
+
+  const openWorkout = useCallback((training) => {
+    setWorkoutDetail({ training, returnTab: tab })
+  }, [tab])
+
+  const closeWorkout = useCallback(() => {
+    setTab(workoutDetail?.returnTab || "overview")
+    setWorkoutDetail(null)
+  }, [workoutDetail])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -45,8 +56,14 @@ export default function App() {
 
   return (
     <div className="min-h-full bg-surface">
-      <main className="mx-auto min-h-full max-w-md pb-24">
-        {tab === "overview" && (
+      <main className={`mx-auto min-h-full max-w-md ${workoutDetail ? "" : "pb-24"}`}>
+        {workoutDetail ? (
+          <WorkoutDetailPage
+            training={workoutDetail.training}
+            history={history}
+            onBack={closeWorkout}
+          />
+        ) : tab === "overview" && (
           <OverviewPage
             history={history}
             loading={loading}
@@ -54,9 +71,10 @@ export default function App() {
             onRetry={load}
             onStart={() => setTab("log")}
             onShowAll={() => setTab("profile")}
+            onOpenWorkout={openWorkout}
           />
         )}
-        {tab === "log" && (
+        {!workoutDetail && tab === "log" && (
           <TrainingPage
             history={history}
             historyLoading={loading}
@@ -64,10 +82,10 @@ export default function App() {
             goToOverview={() => setTab("overview")}
           />
         )}
-        {tab === "progress" && (
+        {!workoutDetail && tab === "progress" && (
           <ProgressPage history={history} loading={loading} error={error} onRetry={load} />
         )}
-        {tab === "profile" && (
+        {!workoutDetail && tab === "profile" && (
           <ProfilePage
             history={history}
             loading={loading}
@@ -76,10 +94,11 @@ export default function App() {
             profile={profile}
             profileLoading={profileLoading}
             onSaveProfile={saveProfile}
+            onOpenWorkout={openWorkout}
           />
         )}
       </main>
-      <BottomNav active={tab} onChange={setTab} />
+      {!workoutDetail && <BottomNav active={tab} onChange={setTab} />}
     </div>
   )
 }

@@ -126,6 +126,60 @@ export function formatWeight(value) {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value || 0)
 }
 
+export function estimatedOneRepMax(set) {
+  const weight = Number(set?.weight) || 0
+  const reps = Number(set?.reps) || 0
+  if (!weight || !reps) return 0
+  return Number((weight * (1 + reps / 30)).toFixed(1))
+}
+
+export function previousExerciseBest(history, exerciseId, beforeDate) {
+  const candidates = history
+    .filter((training) => !beforeDate || parseDate(training.date) < parseDate(beforeDate))
+    .flatMap((training) =>
+      (training.exercises || [])
+        .filter((exercise) => Number(exercise.baseExercise) === Number(exerciseId))
+        .map((exercise) => ({ training, exercise })),
+    )
+    .sort((a, b) => parseDate(b.training.date) - parseDate(a.training.date))
+
+  const previous = candidates[0]
+  if (!previous) return null
+  const bestSet = [...(previous.exercise.sets || [])].sort(
+    (a, b) => estimatedOneRepMax(b) - estimatedOneRepMax(a),
+  )[0]
+  if (!bestSet) return null
+
+  return { date: previous.training.date, set: bestSet }
+}
+
+export function trainingRecordSets(history, selectedTraining) {
+  const records = new Set()
+  const historicalBest = new Map()
+  const selectedDate = parseDate(selectedTraining?.date)
+
+  for (const training of [...history].sort((a, b) => parseDate(a.date) - parseDate(b.date))) {
+    if (!selectedDate || parseDate(training.date) >= selectedDate) break
+    for (const exercise of training.exercises || []) {
+      const id = Number(exercise.baseExercise)
+      const best = Math.max(0, ...(exercise.sets || []).map(estimatedOneRepMax))
+      historicalBest.set(id, Math.max(historicalBest.get(id) || 0, best))
+    }
+  }
+
+  for (const exercise of selectedTraining?.exercises || []) {
+    const id = Number(exercise.baseExercise)
+    let best = historicalBest.get(id) || 0
+    ;(exercise.sets || []).forEach((set, index) => {
+      const estimate = estimatedOneRepMax(set)
+      if (estimate > best && best > 0) records.add(`${id}:${index}`)
+      best = Math.max(best, estimate)
+    })
+  }
+
+  return records
+}
+
 export function progressExerciseIds(history, minimumSets = 2) {
   const totals = new Map()
   const recentOrder = []
@@ -178,6 +232,64 @@ export function monthlyProgress(points) {
   return {
     change: Number(change.toFixed(1)),
     percent: baseline.maxWeight ? Number(((change / baseline.maxWeight) * 100).toFixed(1)) : null,
+  }
+}
+
+export function periodRange(period = "week", now = new Date()) {
+  const end = startOfDay(now)
+  const days = period === "week" ? 7 : period === "month" ? 30 : 90
+  const start = period === "week" ? startOfWeek(end) : new Date(end)
+  if (period !== "week") start.setDate(start.getDate() - days + 1)
+  return { start, end, days }
+}
+
+export function tonnageProgress(history, period = "week", now = new Date()) {
+  const { start, end, days } = periodRange(period, now)
+  const previousEnd = new Date(start)
+  previousEnd.setDate(previousEnd.getDate() - 1)
+  const previousStart = new Date(previousEnd)
+  previousStart.setDate(previousStart.getDate() - days + 1)
+
+  const currentTrainings = history.filter((training) => {
+    const date = parseDate(training.date)
+    return date && date >= start && date <= end
+  })
+  const previousTrainings = history.filter((training) => {
+    const date = parseDate(training.date)
+    return date && date >= previousStart && date <= previousEnd
+  })
+
+  const buckets = new Map()
+  for (const training of currentTrainings) {
+    const date = parseDate(training.date)
+    const bucketDate = period === "week" ? startOfDay(date) : startOfWeek(date)
+    const key = toISODate(bucketDate)
+    const existing = buckets.get(key) || { date: key, tonnage: 0, trainings: 0 }
+    existing.tonnage += trainingVolume(training)
+    existing.trainings += 1
+    buckets.set(key, existing)
+  }
+
+  const points = [...buckets.values()]
+    .sort((a, b) => parseDate(a.date) - parseDate(b.date))
+    .map((point) => ({
+      ...point,
+      tonnage: Number(point.tonnage.toFixed(1)),
+      label: period === "week"
+        ? new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(parseDate(point.date)).replace(".", "")
+        : new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(parseDate(point.date)),
+    }))
+
+  const total = currentTrainings.reduce((sum, training) => sum + trainingVolume(training), 0)
+  const previousTotal = previousTrainings.reduce((sum, training) => sum + trainingVolume(training), 0)
+  const change = previousTotal ? ((total - previousTotal) / previousTotal) * 100 : null
+
+  return {
+    points,
+    total: Number(total.toFixed(1)),
+    average: currentTrainings.length ? Number((total / currentTrainings.length).toFixed(1)) : 0,
+    change: change === null ? null : Number(change.toFixed(1)),
+    trainingCount: currentTrainings.length,
   }
 }
 

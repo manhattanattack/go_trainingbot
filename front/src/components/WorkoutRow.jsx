@@ -4,7 +4,7 @@ import ExerciseIcon from "./ExerciseIcon.jsx"
 import { exerciseName, getExercise } from "../lib/exercises.js"
 import { relativeDay, trainingVolume, trainingSetCount, formatVolume } from "../lib/format.js"
 
-export default function WorkoutRow({ training, compact = false }) {
+export default function WorkoutRow({ training, compact = false, onClick }) {
   const names = (training.exercises || []).map((e) => exerciseName(e.baseExercise))
   const primaryExercise = getExercise(training.exercises?.[0]?.baseExercise)
   const preview = names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "")
@@ -14,7 +14,7 @@ export default function WorkoutRow({ training, compact = false }) {
   const setWord = sets % 10 === 1 && sets % 100 !== 11 ? "подход" : sets % 10 >= 2 && sets % 10 <= 4 && (sets % 100 < 12 || sets % 100 > 14) ? "подхода" : "подходов"
 
   return (
-    <InsetRow className={compact ? "py-2.5" : undefined}>
+    <InsetRow onClick={onClick} className={compact ? "py-2.5" : undefined}>
       <ExerciseIcon
         muscleGroup={primaryExercise.muscleGroup}
         equipment={primaryExercise.equipment}

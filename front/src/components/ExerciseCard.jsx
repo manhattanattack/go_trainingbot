@@ -263,6 +263,7 @@ export default function ExerciseCard({
   index,
   collapseVersion,
   isLatest,
+  previousBest,
   onUpdate,
   onRemove,
 }) {
@@ -325,6 +326,16 @@ export default function ExerciseCard({
           <Trash2 size={16} />
         </button>
       </div>
+
+      {previousBest && (
+        <div className="flex items-center justify-between gap-3 border-t border-hairline bg-accent-soft px-4 py-2.5">
+          <span className="text-[11px] font-600 uppercase tracking-wide text-accent">Прошлый раз</span>
+          <span className="font-display text-[13px] font-700 text-ink">
+            {previousBest.set.weight} кг × {previousBest.set.reps}
+            {previousBest.set.rpe ? <span className="ml-2 text-ink-muted">RPE {previousBest.set.rpe}</span> : null}
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-2 border-t border-hairline p-3">
         {exercise.sets.map((set, setIndex) => (

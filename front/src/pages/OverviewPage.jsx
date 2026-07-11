@@ -17,7 +17,7 @@ import {
 
 const INACTIVITY_THRESHOLD_DAYS = 2
 
-export default function OverviewPage({ history, loading, error, onRetry, onStart, onShowAll }) {
+export default function OverviewPage({ history, loading, error, onRetry, onStart, onShowAll, onOpenWorkout }) {
   const workoutDates = useMemo(
     () => new Set(history.map((training) => parseDate(training.date)).filter(Boolean).map(toISODate)),
     [history],
@@ -40,18 +40,18 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
     return !trainedToday || inactiveForTooLong
   }, [history, loading, workoutDates])
 
-  const { weeklyVolume, weeklyCount } = useMemo(() => {
+  const { weeklyTonnage, weeklyCount } = useMemo(() => {
     const now = new Date()
-    let vol = 0
+    let tonnage = 0
     let count = 0
     for (const t of history) {
       const d = parseDate(t.date)
       if (d && daysBetween(now, d) >= 0 && daysBetween(now, d) < 7) {
-        vol += trainingVolume(t)
+        tonnage += trainingVolume(t)
         count += 1
       }
     }
-    return { weeklyVolume: vol, weeklyCount: count }
+    return { weeklyTonnage: tonnage, weeklyCount: count }
   }, [history])
 
   const recent = history.slice(0, 3)
@@ -92,8 +92,8 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
         <section className="grid grid-cols-2 gap-3 px-4">
           <StatCard
             icon={TrendingUp}
-            label="Объём за неделю"
-            value={`${formatVolume(weeklyVolume)}`}
+            label="Тоннаж за неделю"
+            value={`${formatVolume(weeklyTonnage)}`}
             unit="кг"
           />
           <StatCard
@@ -123,7 +123,7 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
             <div className="flex flex-col gap-3">
               <InsetGroup>
                 {recent.map((t) => (
-                  <WorkoutRow key={t.trainingId} training={t} compact />
+                  <WorkoutRow key={t.trainingId} training={t} compact onClick={() => onOpenWorkout?.(t)} />
                 ))}
               </InsetGroup>
               <div className="px-4">
