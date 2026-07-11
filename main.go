@@ -117,10 +117,10 @@ func sendResponse(w http.ResponseWriter, statusCode int, data map[string]any) {
 
 // мидлвейр выполняет передаваемую функцию next, но с модифицированным запросом
 // (добавляет к нему контекст с userId пользователя, и хендлер уже знает его и уверен что пользователь залогинен)
-func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	// мидлвейр передается в HandlerFunc. в HandlerFunc выполняется middleware, в который аргументом передается моя функция-хендлер
+func authMiddleware(next http.Handler) http.HandlerFunc {
+	// мидлвейр принимает http.Handler (любой хендлер, включая FileServer, StripPrefix и обычные HandlerFunc)
 	// миддлвейр в свою очередь сразу же возвращает анонимную функцию, внутри которой проходит валидация и
-	// вызывается мой хендлер с модифицированным запросом, которую позже вызовет HandlerFunc когда придет запрос на роут
+	// вызывается мой хендлер с модифицированным запросом, которую позже вызовет http.HandleFunc когда придет запрос на роут
 	return func(w http.ResponseWriter, r *http.Request) {
 		responseData := map[string]any{
 			"error": "Invalid authorization token",
@@ -149,7 +149,7 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		ctx := context.WithValue(r.Context(), userIDKey, userId)
-		next(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(ctx)) // не просто next(), а next.ServeHTTP(), потому что http.Handler не может быть вызван явно, только HandleFunc, поэтому вызываем через этот метод, HandleFunc тоже его имеет тк реализует его как интерфейс.
 
 	}
 }
@@ -376,11 +376,11 @@ func initDB() {
 func main() {
 	godotenv.Load()
 	initDB()
-	http.Handle("/", http.FileServer(http.Dir("static")))
-	http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
-	http.HandleFunc("GET /me", authMiddleware(meHandler))
-	http.HandleFunc("GET /api/profile", authMiddleware(profileHandler))
-	http.HandleFunc("PUT /api/profile", authMiddleware(profileHandler))
+	http.Handle("/", authMiddleware(http.FileServer(http.Dir("static"))))
+	http.HandleFunc("POST /api/training", authMiddleware(http.HandlerFunc(addTrainingHandler)))
+	http.HandleFunc("GET /me", authMiddleware(http.HandlerFunc(meHandler)))
+	http.HandleFunc("GET /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
+	http.HandleFunc("PUT /api/profile", authMiddleware(http.HandlerFunc(profileHandler)))
 	// http.HandleFunc("POST /api/training", authMiddleware(addTrainingHandler))
 	// http.HandleFunc("GET /me", authMiddleware(meHandler))
 
