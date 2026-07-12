@@ -23,7 +23,7 @@ export default function WorkoutRow({ training, compact = false, onClick }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="font-display text-[15px] font-600 text-ink">{relativeDay(training.date)}</span>
-          <span className="shrink-0 text-[13px] font-500 text-accent">{formatVolume(volume)} кг</span>
+          <span className="shrink-0 text-[13px] font-500 text-accent">{formatVolume(volume)}</span>
         </div>
         <p className="truncate text-[13px] text-ink-muted">
           {preview || "Нет упражнений"} · {sets} {setWord}

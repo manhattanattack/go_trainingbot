@@ -10,6 +10,7 @@ import {
   trainingVolume,
 } from "../lib/format.js"
 import { getExercise } from "../lib/exercises.js"
+import { hapticImpact } from "../lib/haptics.js"
 
 const WEEKDAYS = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"]
 const LONG_PRESS_MS = 450
@@ -81,7 +82,7 @@ export default function CalendarStrip({ workoutDates, history = [], days = 15 })
         isToday: i === 0,
         hasWorkout,
         intensity,
-        label: `${i === 0 ? "Сегодня, " : ""}${fullDate}. ${hasWorkout ? `Есть тренировка, объём ${formatVolume(volume)} кг` : "Без тренировки"}`,
+        label: `${i === 0 ? "Сегодня, " : ""}${fullDate}. ${hasWorkout ? `Есть тренировка, объём ${formatVolume(volume)}` : "Без тренировки"}`,
       })
     }
     return out
@@ -114,6 +115,7 @@ export default function CalendarStrip({ workoutDates, history = [], days = 15 })
     pressStartRef.current = { x: event.clientX, y: event.clientY }
     pressTimerRef.current = setTimeout(() => {
       const trainings = dailyWorkouts.get(item.iso) || []
+      hapticImpact("medium")
       setPreview({ iso: item.iso, trainings })
       pressTimerRef.current = null
       pressStartRef.current = null
@@ -184,22 +186,28 @@ export default function CalendarStrip({ workoutDates, history = [], days = 15 })
 }
 
 function WorkoutPreview({ preview, onClose }) {
+  const [closing, setClosing] = useState(false)
+  const requestClose = () => {
+    if (closing) return
+    setClosing(true)
+    window.setTimeout(onClose, 240)
+  }
   const exercises = preview.trainings.flatMap((training) => training.exercises || [])
   const totalVolume = preview.trainings.reduce((sum, training) => sum + trainingVolume(training), 0)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-ink/45"
+      className={`fixed inset-0 z-50 flex items-end bg-ink/45 transition-opacity duration-200 ${closing ? "opacity-0" : "opacity-100"}`}
       role="presentation"
       onPointerDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (event.target === event.currentTarget) requestClose()
       }}
     >
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="workout-preview-title"
-        className="max-h-[78vh] w-full overflow-y-auto rounded-t-3xl border border-hairline bg-surface px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl"
+        className={`max-h-[78vh] w-full overflow-y-auto rounded-t-3xl border border-hairline bg-surface px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl transition-all duration-200 motion-reduce:transition-none ${closing ? "translate-y-6 opacity-0" : "translate-y-0 opacity-100"}`}
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ink-faint/40" />
         <div className="flex items-start justify-between gap-4">
@@ -211,7 +219,7 @@ function WorkoutPreview({ preview, onClose }) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Закрыть превью тренировки"
             className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-ink-muted transition-colors active:bg-card-2"
           >
@@ -238,7 +246,7 @@ function WorkoutPreview({ preview, onClose }) {
 
         <div className="mt-3 flex items-center justify-between rounded-2xl bg-card px-4 py-3">
           <span className="text-[13px] font-500 text-ink-muted">Общий тоннаж</span>
-          <span className="font-display text-[18px] font-700 text-accent">{formatVolume(totalVolume)} кг</span>
+          <span className="font-display text-[18px] font-700 text-accent">{formatVolume(totalVolume)}</span>
         </div>
       </section>
     </div>

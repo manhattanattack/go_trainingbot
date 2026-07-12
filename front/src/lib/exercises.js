@@ -37,7 +37,7 @@ export const EXERCISES = [
   { id: 25, name: "Разгибание рук на блоке", group: "Руки", muscleGroup: "arms", equipment: "machine" },
   { id: 26, name: "Разгибание рук над головой", group: "Руки", muscleGroup: "arms", equipment: "dumbbell" },
   { id: 27, name: "Жим лёжа узким хватом", group: "Руки", muscleGroup: "arms", equipment: "barbell" },
-  { id: 28, name: "Планка", group: "Кор", muscleGroup: "abs", equipment: "bodyweight" },
+  { id: 28, name: "Планка", group: "Кор", muscleGroup: "abs", equipment: "bodyweight", measurementType: "time" },
   { id: 29, name: "Подъём ног в висе", group: "Кор", muscleGroup: "abs", equipment: "bodyweight" },
   { id: 30, name: "Скручивания на блоке", group: "Кор", muscleGroup: "abs", equipment: "machine" },
 ]
@@ -45,12 +45,15 @@ export const EXERCISES = [
 const BY_ID = new Map(EXERCISES.map((e) => [e.id, e]))
 
 export function getExercise(id) {
-  return BY_ID.get(id) || {
+  const exercise = BY_ID.get(id)
+  if (exercise) return { measurementType: "reps", ...exercise }
+  return {
     id,
     name: `Упражнение №${id}`,
     group: "Другое",
     muscleGroup: "chest",
     equipment: "dumbbell",
+    measurementType: "reps",
   }
 }
 

@@ -89,7 +89,7 @@ export default function ProfilePage({
           </section>
         ) : (
           <section className="content-reveal grid grid-cols-3 gap-3 px-4" aria-label="Общая статистика">
-            <StatTile icon={Layers} value={formatVolume(stats.volume)} unit="кг" label="Объём" />
+            <StatTile icon={Layers} value={formatVolume(stats.volume)} label="Объём" />
             <StatTile icon={Dumbbell} value={stats.workouts} label="Тренировки" />
             <StatTile icon={Flame} value={stats.sets} label="Подходы" />
           </section>
@@ -368,7 +368,6 @@ function ProfileEditor({ profile, onClose, onSave }) {
               onChange={(event) => setHeight(event.target.value)}
               className="h-14 rounded-2xl border border-hairline-strong bg-card px-4 font-display text-[20px] font-700 text-ink outline-none focus:border-accent"
               placeholder="180"
-              autoFocus
             />
           </label>
           <label className="flex flex-col gap-2 text-[13px] font-600 text-ink-muted">
@@ -415,7 +414,6 @@ function ExerciseFilter({ selected, onSelect, onClose }) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Найти упражнение"
             className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-faint"
-            autoFocus
           />
         </label>
       </div>

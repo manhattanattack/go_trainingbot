@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
-import { Copy, HelpCircle, Plus, Trash2, X } from "lucide-react"
+import { Copy, HelpCircle, Pause, Play, Plus, Trash2, X } from "lucide-react"
 import ExerciseIcon from "./ExerciseIcon.jsx"
 import { exerciseName, getExercise } from "../lib/exercises.js"
+import { hapticImpact, hapticSelection } from "../lib/haptics.js"
 
 const RPE_VALUES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10]
 const SWIPE_REVEAL = 76
@@ -23,7 +24,41 @@ function SetInput({ value, onChange, placeholder, ariaLabel, step = 1 }) {
   )
 }
 
-function SetCard({ set, number, collapsed, canDelete, onExpand, onChange, onDuplicate, onRemove, onRpeHelp }) {
+function Stopwatch({ value, onChange, number }) {
+  const [running, setRunning] = useState(false)
+  const startedAt = useRef(0)
+  const baseSeconds = useRef(0)
+
+  useEffect(() => {
+    if (!running) return undefined
+    const timer = window.setInterval(() => {
+      onChange(String(baseSeconds.current + Math.floor((Date.now() - startedAt.current) / 1000)))
+    }, 250)
+    return () => window.clearInterval(timer)
+  }, [running, onChange])
+
+  const toggle = () => {
+    hapticImpact("medium")
+    if (running) {
+      setRunning(false)
+    } else {
+      baseSeconds.current = Number(value) || 0
+      startedAt.current = Date.now()
+      setRunning(true)
+    }
+  }
+
+  return (
+    <div className="flex gap-2">
+      <SetInput value={value} onChange={onChange} placeholder="0" ariaLabel={`Время подхода ${number} в секундах`} />
+      <button type="button" onClick={toggle} aria-label={running ? "Остановить таймер" : "Запустить таймер"} className="flex h-10 w-12 shrink-0 items-center justify-center rounded-xl bg-accent text-surface">
+        {running ? <Pause size={17} /> : <Play size={17} />}
+      </button>
+    </div>
+  )
+}
+
+function SetCard({ set, number, isTime, collapsed, canDelete, onExpand, onChange, onDuplicate, onRemove, onRpeHelp }) {
   const start = useRef(null)
   const [offset, setOffset] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -134,7 +169,7 @@ function SetCard({ set, number, collapsed, canDelete, onExpand, onChange, onDupl
           >
             <span className="text-[12px] font-600 text-ink-muted">Подход завершён</span>
             <span className="font-display text-[14px] font-700 text-ink">
-              {set.weight || 0} кг × {set.reps || 0}
+              {isTime ? `${set.durationSeconds || 0} сек` : `${set.weight || 0} кг × ${set.reps || 0}`}
               {set.rpe ? <span className="ml-2 text-accent">RPE {set.rpe}</span> : null}
             </span>
           </button>
@@ -152,13 +187,17 @@ function SetCard({ set, number, collapsed, canDelete, onExpand, onChange, onDupl
             />
           </label>
           <label className="grid gap-1">
-            <span className="text-[11px] font-600 uppercase tracking-wide text-ink-faint">Повторы</span>
-            <SetInput
-              value={set.reps}
-              onChange={(value) => onChange("reps", value)}
-              placeholder="0"
-              ariaLabel={`Повторы подхода ${number}`}
-            />
+            <span className="text-[11px] font-600 uppercase tracking-wide text-ink-faint">{isTime ? "Время, сек" : "Повторы"}</span>
+            {isTime ? (
+              <Stopwatch value={set.durationSeconds || ""} onChange={(value) => onChange("durationSeconds", value)} number={number} />
+            ) : (
+              <SetInput
+                value={set.reps}
+                onChange={(value) => onChange("reps", value)}
+                placeholder="0"
+                ariaLabel={`Повторы подхода ${number}`}
+              />
+            )}
           </label>
         </div>
 
@@ -283,6 +322,7 @@ export default function ExerciseCard({
   onRemove,
 }) {
   const meta = getExercise(exercise.baseExercise)
+  const isTime = meta.measurementType === "time"
   const [rpeHelpOpen, setRpeHelpOpen] = useState(false)
   const [activeSetIndex, setActiveSetIndex] = useState(() => Math.max(0, exercise.sets.length - 1))
 
@@ -309,8 +349,9 @@ export default function ExerciseCard({
   const addSet = () => {
     const last = exercise.sets[exercise.sets.length - 1]
     const next = last
-      ? { weight: last.weight, reps: last.reps, rpe: last.rpe, note: "" }
-      : { weight: "", reps: "", rpe: "", note: "" }
+      ? { weight: last.weight, reps: last.reps, durationSeconds: last.durationSeconds, rpe: last.rpe, note: "" }
+      : { weight: "", reps: "", durationSeconds: "", rpe: "", note: "" }
+    hapticImpact("light")
     onUpdate({ ...exercise, sets: [...exercise.sets, next] })
     setActiveSetIndex(exercise.sets.length)
   }
@@ -358,6 +399,7 @@ export default function ExerciseCard({
             key={setIndex}
             set={set}
             number={setIndex + 1}
+            isTime={isTime}
             collapsed={activeSetIndex !== setIndex}
             canDelete={exercise.sets.length > 1}
             onExpand={() => setActiveSetIndex(setIndex)}

@@ -5,10 +5,12 @@ import ExerciseCard from "../components/ExerciseCard.jsx"
 import ExercisePicker from "../components/ExercisePicker.jsx"
 import { saveTraining } from "../lib/api.js"
 import { toISODate, formatVolume, parseDate, relativeDay, previousExerciseBest } from "../lib/format.js"
-import { exerciseName } from "../lib/exercises.js"
+import { exerciseName, getExercise } from "../lib/exercises.js"
+import { hapticImpact, hapticNotification, hapticSelection } from "../lib/haptics.js"
 
-function emptySet() {
-  return { weight: "", reps: "", rpe: "", note: "" }
+function emptySet(baseExercise) {
+  const isTime = getExercise(baseExercise).measurementType === "time"
+  return { weight: "", reps: isTime ? undefined : "", durationSeconds: isTime ? "" : undefined, rpe: "", note: "" }
 }
 
 export default function TrainingPage({
@@ -44,7 +46,7 @@ export default function TrainingPage({
   const repeatLastTraining = () => {
     const repeatedExercises = (lastTraining?.exercises || []).map((exercise) => ({
       baseExercise: exercise.baseExercise,
-      sets: [emptySet()],
+      sets: [emptySet(exercise.baseExercise)],
     }))
     if (repeatedExercises.length === 0) return
     setExercises(repeatedExercises)
@@ -66,7 +68,8 @@ export default function TrainingPage({
   )
 
   const addExercise = (baseExercise) => {
-    setExercises((prev) => [...prev, { baseExercise, sets: [emptySet()] }])
+    hapticSelection()
+    setExercises((prev) => [...prev, { baseExercise, sets: [emptySet(baseExercise)] }])
     setExerciseAddVersion((version) => version + 1)
     setPickerOpen(false)
   }
@@ -85,7 +88,9 @@ export default function TrainingPage({
       baseExercise: ex.baseExercise,
       sets: ex.sets.map((s) => ({
         weight: Number(s.weight) || 0,
-        reps: Number(s.reps) || 0,
+        ...(getExercise(ex.baseExercise).measurementType === "time"
+          ? { durationSeconds: Number(s.durationSeconds) || 0 }
+          : { reps: Number(s.reps) || 0 }),
         rpe: Number(s.rpe) || 0,
         note: s.note || "",
       })),
@@ -101,12 +106,14 @@ export default function TrainingPage({
     setStatus(null)
     try {
       await saveTraining(buildPayload())
+      hapticNotification("success")
       setStatus({ type: "success", message: "Тренировка сохранена." })
       setExercises([])
       setDate(toISODate(new Date()))
       onSaved?.()
       setTimeout(() => goToOverview?.(), 700)
     } catch (err) {
+      hapticNotification("error")
       setStatus({ type: "error", message: err.message || "Не удалось сохранить тренировку." })
     } finally {
       setSaving(false)
@@ -139,7 +146,7 @@ export default function TrainingPage({
           <section className="grid grid-cols-3 gap-3 px-4">
             <Summary label="Упражнения" value={exercises.length} />
             <Summary label="Подходы" value={totalSets} />
-            <Summary label="Объём" value={`${formatVolume(totalVolume)}`} unit="кг" />
+            <Summary label="Объём" value={formatVolume(totalVolume)} />
           </section>
         )}
 

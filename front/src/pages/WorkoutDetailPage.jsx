@@ -1,6 +1,9 @@
-import { ArrowLeft, CalendarDays, Dumbbell, Layers, Trophy } from "lucide-react"
+import { useState } from "react"
+import { ArrowLeft, CalendarDays, Dumbbell, Layers, Loader2, Trash2, Trophy, X } from "lucide-react"
 import ExerciseIcon from "../components/ExerciseIcon.jsx"
 import { exerciseName, getExercise } from "../lib/exercises.js"
+import { deleteTraining } from "../lib/api.js"
+import { hapticNotification } from "../lib/haptics.js"
 import {
   estimatedOneRepMax,
   formatFullDate,
@@ -11,8 +14,26 @@ import {
   trainingVolume,
 } from "../lib/format.js"
 
-export default function WorkoutDetailPage({ training, history, onBack }) {
+export default function WorkoutDetailPage({ training, history, onBack, onDeleted }) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
   if (!training) return null
+
+  const handleDelete = async () => {
+    if (deleting) return
+    setDeleting(true)
+    setDeleteError("")
+    try {
+      await deleteTraining({ training_id: training.trainingId })
+      hapticNotification("success")
+      onDeleted?.(training.trainingId)
+    } catch (error) {
+      hapticNotification("error")
+      setDeleteError(error.message || "Не удалось удалить тренировку")
+      setDeleting(false)
+    }
+  }
 
   const volume = trainingVolume(training)
   const setCount = trainingSetCount(training)
@@ -30,10 +51,13 @@ export default function WorkoutDetailPage({ training, history, onBack }) {
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[11px] font-600 uppercase tracking-[0.16em] text-accent">Дневник</p>
             <h1 className="truncate font-display text-[19px] font-800 text-ink">Детали тренировки</h1>
           </div>
+          <button type="button" onClick={() => { hapticNotification("warning"); setConfirmOpen(true) }} aria-label="Удалить тренировку" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card text-accent-strong active:bg-card-2">
+            <Trash2 size={19} />
+          </button>
         </div>
       </header>
 
@@ -59,7 +83,7 @@ export default function WorkoutDetailPage({ training, history, onBack }) {
           <div className="mt-5 grid grid-cols-3 divide-x divide-hairline border-t border-hairline pt-4">
             <Summary icon={Dumbbell} value={training.exercises?.length || 0} label="Упражнения" />
             <Summary icon={Layers} value={setCount} label="Подходы" />
-            <Summary icon={Trophy} value={formatVolume(volume)} unit="кг" label="Тоннаж" />
+            <Summary icon={Trophy} value={formatVolume(volume)} label="Тоннаж" />
           </div>
         </section>
 
@@ -79,6 +103,22 @@ export default function WorkoutDetailPage({ training, history, onBack }) {
           </div>
         </section>
       </main>
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-surface/80 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm" role="presentation" onPointerDown={(event) => event.target === event.currentTarget && !deleting && setConfirmOpen(false)}>
+          <section role="alertdialog" aria-modal="true" aria-labelledby="delete-title" className="w-full max-w-sm rounded-3xl border border-hairline bg-card p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-[11px] font-700 uppercase tracking-wide text-accent-strong">Безвозвратно</p><h2 id="delete-title" className="mt-1 font-display text-[20px] font-800 text-ink">Удалить тренировку?</h2></div>
+              <button type="button" disabled={deleting} onClick={() => setConfirmOpen(false)} aria-label="Закрыть" className="flex h-10 w-10 items-center justify-center rounded-full bg-card-2 text-ink-muted"><X size={18} /></button>
+            </div>
+            <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">Все подходы и результаты этой тренировки будут удалены.</p>
+            {deleteError && <p role="alert" className="mt-3 text-[13px] text-accent-strong">{deleteError}</p>}
+            <div className="mt-5 flex gap-2">
+              <button type="button" disabled={deleting} onClick={() => setConfirmOpen(false)} className="min-h-12 flex-1 rounded-2xl bg-card-2 font-600 text-ink">Отмена</button>
+              <button type="button" disabled={deleting} onClick={handleDelete} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-accent-strong font-700 text-surface disabled:opacity-60">{deleting && <Loader2 size={17} className="animate-spin" />}Удалить</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

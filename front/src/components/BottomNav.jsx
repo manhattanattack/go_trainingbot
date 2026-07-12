@@ -1,5 +1,6 @@
 import { ChartNoAxesCombined, LayoutGrid, Dumbbell, User } from "lucide-react"
 import { cn } from "../lib/format.js"
+import { hapticSelection } from "../lib/haptics.js"
 
 const TABS = [
   { id: "overview", label: "Обзор", icon: LayoutGrid },
@@ -21,7 +22,7 @@ export default function BottomNav({ active, onChange }) {
             <button
               key={id}
               type="button"
-              onClick={() => onChange(id)}
+              onClick={() => { if (!isActive) hapticSelection(); onChange(id) }}
               aria-current={isActive ? "page" : undefined}
               className="tap-feedback flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 transition-colors"
             >

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Search, X, Plus } from "lucide-react"
 import ExerciseIcon from "./ExerciseIcon.jsx"
 import { EXERCISES } from "../lib/exercises.js"
+import { hapticSelection } from "../lib/haptics.js"
 
 export default function ExercisePicker({ open, onClose, onSelect }) {
   const [query, setQuery] = useState("")
@@ -13,8 +14,6 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
     if (open) {
       setClosing(false)
       setQuery("")
-      const t = setTimeout(() => inputRef.current?.focus(), 250)
-      return () => clearTimeout(t)
     }
   }, [open])
 
@@ -93,7 +92,7 @@ export default function ExercisePicker({ open, onClose, onSelect }) {
                   {items.map((ex) => (
                     <button
                       key={ex.id}
-                      onClick={() => requestClose(() => onSelect(ex.id))}
+                      onClick={() => { hapticSelection(); requestClose(() => onSelect(ex.id)) }}
                       className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors active:bg-card-2"
                     >
                       <span className="flex min-w-0 items-center gap-3">

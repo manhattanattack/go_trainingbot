@@ -108,6 +108,11 @@ export default function App() {
             training={workoutDetail.training}
             history={history}
             onBack={closeWorkout}
+            onDeleted={(trainingId) => {
+              setHistory((items) => items.filter((item) => item.trainingId !== trainingId))
+              closeWorkout()
+              load()
+            }}
           />
         ) : tab === "overview" && (
           <OverviewPage

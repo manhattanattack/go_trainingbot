@@ -70,10 +70,11 @@ export function completedWeekStreak(history, weeklyGoal = 3, now = new Date()) {
   return streak
 }
 
-export function formatVolume(n) {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}к`
-  return `${Math.round(n)}`
+export function formatVolume(value) {
+  const n = Number(value) || 0
+  if (Math.abs(n) < 1000) return `${Math.round(n)} кг`
+  const tonnes = n / 1000
+  return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(tonnes)} т`
 }
 
 export function formatFullDate(str) {

@@ -86,7 +86,7 @@ export default function OverviewPage({ history, loading, error, onRetry, onStart
               </div>
             </section>
             <section className="grid grid-cols-2 gap-3 px-4">
-              <StatCard icon={TrendingUp} label="Тоннаж за неделю" value={`${formatVolume(weeklyTonnage)}`} unit="кг" />
+              <StatCard icon={TrendingUp} label="Тоннаж за неделю" value={formatVolume(weeklyTonnage)} />
               <StatCard icon={Flame} label="На этой неделе" value={`${weeklyCount}`} unit={trainingLabel(weeklyCount)} />
             </section>
           </div>

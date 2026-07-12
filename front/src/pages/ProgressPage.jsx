@@ -157,15 +157,15 @@ function StrengthSection({ history }) {
           {points.length < 2 ? (
             <InlineEmpty icon={TrendingUp} title="Нужна ещё одна тренировка" text="После следующей записи здесь появится линия динамики." />
           ) : (
-            <div className="h-72 w-full px-1 pb-2 pt-4" aria-label={`График прогресса: ${exercise?.name}`}>
+            <div className="h-72 w-full touch-none select-none px-1 pb-2 pt-4 outline-none [-webkit-tap-highlight-color:transparent]" aria-label={`График прогресса: ${exercise?.name}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points} margin={{ top: 8, right: 14, left: 2, bottom: 2 }}>
                   <CartesianGrid stroke="var(--color-hairline)" vertical={false} />
                   <XAxis dataKey="shortDate" axisLine={false} tickLine={false} tick={{ fill: "var(--color-ink-faint)", fontSize: 11 }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--color-ink-faint)", fontSize: 11 }} width={48} tickFormatter={(value) => `${formatWeight(value)} кг`} />
                   <Tooltip content={<ProgressTooltip />} cursor={{ stroke: "var(--color-hairline-strong)", strokeDasharray: "4 4" }} />
-                  <Line type="monotone" dataKey="maxWeight" stroke="var(--color-accent)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-card)", strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="estimatedOneRepMax" stroke="var(--color-ink-muted)" strokeWidth={2} strokeDasharray="6 5" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="maxWeight" stroke="var(--color-accent)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-card)", strokeWidth: 2 }} activeDot={{ r: 10, strokeWidth: 4 }} />
+                  <Line type="monotone" dataKey="estimatedOneRepMax" stroke="var(--color-ink-muted)" strokeWidth={2} strokeDasharray="6 5" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} activeDot={{ r: 9, strokeWidth: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -194,14 +194,14 @@ function MuscleVolumeSection({ history, period, onPeriodChange }) {
         <PeriodControl value={period} onChange={onPeriodChange} />
       </ChartHeader>
       <div className="px-2 pb-2 pt-4">
-        <div className="h-64 w-full" aria-label="Столбчатая диаграмма объёма по группам мышц">
+        <div className="h-64 w-full touch-none select-none outline-none [-webkit-tap-highlight-color:transparent]" aria-label="Столбчатая диаграмма объёма по группам мышц">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 2 }}>
               <CartesianGrid stroke="var(--color-hairline)" vertical={false} />
               <XAxis dataKey="shortLabel" axisLine={false} tickLine={false} interval={0} tick={{ fill: "var(--color-ink-faint)", fontSize: 10 }} dy={8} />
               <YAxis axisLine={false} tickLine={false} width={42} tick={{ fill: "var(--color-ink-faint)", fontSize: 10 }} tickFormatter={formatVolume} />
               <Tooltip content={<VolumeTooltip />} cursor={{ fill: "var(--color-surface)", opacity: 0.65 }} />
-              <Bar dataKey="volume" fill="var(--color-accent)" radius={[6, 6, 2, 2]} minPointSize={2}>
+              <Bar dataKey="volume" fill="var(--color-accent)" radius={[6, 6, 2, 2]} minPointSize={4} maxBarSize={44}>
                 {data.map((group, index) => <Cell key={group.id} fill="var(--color-accent)" fillOpacity={BAR_OPACITY[index]} />)}
               </Bar>
             </BarChart>
@@ -236,22 +236,22 @@ function TonnageSection({ history, period, onPeriodChange }) {
         {data.trainingCount < 2 ? (
           <InlineEmpty icon={Dumbbell} title="Нужно больше тренировок" text="Запишите хотя бы две тренировки за выбранный период, чтобы увидеть динамику тоннажа." />
         ) : (
-          <div className="h-72 w-full px-2 pb-2 pt-4" aria-label="Столбчатая диаграмма тоннажа">
+          <div className="h-72 w-full touch-none select-none px-2 pb-2 pt-4 outline-none [-webkit-tap-highlight-color:transparent]" aria-label="Столбчатая диаграмма тоннажа">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.points} margin={{ top: 8, right: 8, left: 0, bottom: 2 }}>
                 <CartesianGrid stroke="var(--color-hairline)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "var(--color-ink-faint)", fontSize: 10 }} dy={8} />
                 <YAxis axisLine={false} tickLine={false} width={46} tick={{ fill: "var(--color-ink-faint)", fontSize: 10 }} tickFormatter={formatVolume} />
                 <Tooltip content={<TonnageTooltip />} cursor={{ fill: "var(--color-surface)", opacity: 0.65 }} />
-                <Bar dataKey="tonnage" fill="var(--color-accent)" radius={[7, 7, 2, 2]} minPointSize={3} />
+                <Bar dataKey="tonnage" fill="var(--color-accent)" radius={[7, 7, 2, 2]} minPointSize={4} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
       </section>
       <section className="grid grid-cols-3 gap-2" aria-label="Показатели тоннажа">
-        <Metric label="Всего" value={formatVolume(data.total)} unit="кг" />
-        <Metric label="За тренировку" value={formatVolume(data.average)} unit="кг в среднем" />
+        <Metric label="Всего" value={formatVolume(data.total)} />
+        <Metric label="За тренировку" value={formatVolume(data.average)} unit="в среднем" />
         <Metric label="К прошлому" value={data.change === null ? "—" : `${data.change > 0 ? "+" : ""}${formatWeight(data.change)}%`} unit={data.change === null ? "нет базы" : "за период"} positive={data.change > 0} />
       </section>
     </section>
@@ -286,13 +286,13 @@ function InlineEmpty({ icon: Icon, title, text }) {
 function VolumeTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const group = payload[0].payload
-  return <TooltipCard title={group.label} value={`${formatWeight(group.volume)} кг`} detail={`${formatWeight(group.frequency)} раз/нед`} />
+  return <TooltipCard title={group.label} value={formatVolume(group.volume)} detail={`${formatWeight(group.frequency)} раз/нед`} />
 }
 
 function TonnageTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const point = payload[0].payload
-  return <TooltipCard title={formatFullDate(point.date)} value={`${formatWeight(point.tonnage)} кг`} detail={`${point.trainings} трен.`} />
+  return <TooltipCard title={formatFullDate(point.date)} value={formatVolume(point.tonnage)} detail={`${point.trainings} трен.`} />
 }
 
 function TooltipCard({ title, value, detail }) {
